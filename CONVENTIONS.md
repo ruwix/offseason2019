@@ -25,3 +25,7 @@
 - Time: `seconds` (some native function use `ms`)
 - Length: `meters` (some native functions use `feet` or `native units`)
 - Angle: `degrees` (some native functions use `radians`)
+- Coordinates:
+    - x: `left/right`
+    - y: `backwards/forwards`
+    - theta: `counterclockwise starting from 0 facing forwards`
