@@ -2,12 +2,26 @@ import magicbot
 import wpilib
 import ctre
 import numpy as np
+from pint import UnitRegistry
 
 
 class Chassis:
     drive_motor_left: ctre.WPI_TalonSRX
     drive_motor_right: ctre.WPI_TalonSRX
     imu: ctre.PigeonIMU
+
+    units = UnitRegistry()
+    X_WHEELBASE: float = 0.5
+    Y_WHEELBASE: float = 0.5
+
+    WHEEL_DIAMETER: float = 0.1524
+    WHEEL_CIRCUMFERENCE: float = np.pi * WHEEL_DIAMETER
+
+    ENCODER_CPR: int = 4096
+    ENCODER_GEAR_REDUCTION: int = 1
+
+    ENCODER_TICKS_PER_METER = ENCODER_CPR * ENCODER_GEAR_REDUCTION / WHEEL_CIRCUMFERENCE
+    MAX_VELOCITY: float = 2
 
     def __init__(self):
         self.timer = wpilib.Timer()
@@ -45,11 +59,20 @@ class Chassis:
         ) / 2
         self._delta_encoder_pos = self._current_encoder_pos - self._last_encoder_pos
 
-        self.odometry[2] = self.imu.getYawPitchRoll()[0] % (2 * np.pi)
-        self.odometry[0] += np.cos(self.odometry[2]) * self._delta_encoder_pos
-        self.odometry[1] += np.sin(self.odometry[2]) * self._delta_encoder_pos
+        self.odometry[2] = self.imu.getYawPitchRoll()[0] % 360
+        theta_radians = np.deg2rad(self.odometry[2])
+        self.odometry[0] += (
+            np.cos(theta_radians)
+            * self._delta_encoder_pos
+            / self.ENCODER_TICKS_PER_METER
+        )
+        self.odometry[1] -= (
+            np.sin(theta_radians)
+            * self._delta_encoder_pos
+            / self.ENCODER_TICKS_PER_METER
+        )
 
-        self.velocity = self.odometry - self._last_odometry
+        self.velocity = (self.odometry - self._last_odometry) / dt
         # self.acceleration = self.velocity - self._last_velocity
 
         self._last_encoder_pos = self._current_encoder_pos
@@ -85,7 +108,7 @@ class Chassis:
         """Called periodically"""
         self.timestamp = self.timer.getFPGATimestamp()
         dt = self.timestamp - self._last_timestamp
+        self.updateOdometry(dt)
         self.drive_motor_left.set(ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vl)
         self.drive_motor_right.set(ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vr)
-        self.updateOdometry(dt)
         self._last_timestamp = self.timestamp
