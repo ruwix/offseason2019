@@ -3,6 +3,7 @@ import magicbot
 import wpilib
 import ctre
 from components.chassis import Chassis
+from auto.trajectory import Trajectory, loadPath
 
 
 class Robot(magicbot.MagicRobot):
@@ -27,7 +28,9 @@ class Robot(magicbot.MagicRobot):
 
     def teleopInit(self):
         """Called when teleop starts; optional"""
-        pass
+        poses = loadPath("example.csv")
+        trajectory = Trajectory(poses, 0.02)
+        trajectory.build()
 
     def teleopPeriodic(self):
         """Called on each iteration of the control loop"""
@@ -35,7 +38,7 @@ class Robot(magicbot.MagicRobot):
             self.chassis.setInput(self.driver.getY(), self.driver.getZ())
         except:
             self.onException()
-    
+
 
 if __name__ == "__main__":
     wpilib.run(Robot)
