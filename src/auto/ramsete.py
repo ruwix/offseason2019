@@ -7,6 +7,9 @@ class Ramsete:
         self.kzeta = kzeta  # 0 < kzeta < 1; larger kbeta provides more damping
 
     def update(self, pose, pose_d, vd):
+        pose[2] = np.deg2rad(pose[2])
+        pose_d[2] = np.deg2rad(pose_d[2])
+        vd[1] = np.deg2rad(vd[1])
         # Compute errors
         error = pose_d - pose
         # Compute trig functions
@@ -21,7 +24,7 @@ class Ramsete:
             error[0] * cos_theta + error[1] * sin_theta
         )
         # Find angular velocity
-        w = (
+        omega = (
             vd[1]
             + k2
             * vd[0]
@@ -29,5 +32,5 @@ class Ramsete:
             * (error[1] * cos_theta - error[0] * sin_theta)
             + k3 * error[2]
         )
-        return (v, w)
+        return (v, np.rad2deg(omega))
 
