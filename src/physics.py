@@ -5,38 +5,70 @@ from pyfrc import config
 import numpy as np
 
 from components.chassis import Chassis
+from ctre import ControlMode
+
+
+class DriveTrain:
+    def __init__(self):
+        self.vl = 0
+        self.vr = 0
+        self.x_wheelbase = Chassis.X_WHEELBASE / 12
+
+    def getVelocities(self, vl, vr):
+        vl /= 12
+        vr /= 12
+        v = (vl + vr) / 2
+        omega = (vl - vr) / self.x_wheelbase
+        return np.array([v, omega])
+
+
+class SimulatedTalon:
+    def __init__(self, id):
+        self.id = id
+        self.quad_pos = 0
+        self.quad_vel = 0
+
+    def getSpeed(self, hal_data):
+        talon = hal_data["CAN"][self.id]
+        if talon["control_mode"] == ControlMode.PercentOutput:
+            speed = talon["value"] * Chassis.MAX_VELOCITY
+        elif talon["control_mode"] == ControlMode.Velocity:
+            speed = talon["pid0_target"] / Chassis.ENCODER_TICKS_PER_INCH * 10
+        return speed
+
+    def update(self, hal_data, dt):
+        talon = hal_data["CAN"][self.id]
+        self.quad_vel = self.getSpeed(hal_data) * Chassis.ENCODER_TICKS_PER_INCH
+        self.quad_pos += self.quad_vel * dt
+        talon["quad_position"] = int(self.quad_pos)
+        talon["quad_velocity"] = int(self.quad_vel)
 
 
 class PhysicsEngine:
     def __init__(self, controller):
         self.controller = controller
-        self.drive_max_velocity = Chassis.MAX_VELOCITY * 3.28084
-        self.drivetrain = drivetrains.TwoMotorDrivetrain(speed=self.drive_max_velocity)
-        self.quad_pos_left = 0
-        self.quad_pos_right = 0
+        self.drivetrain = DriveTrain()
+        self.drive_left = SimulatedTalon(1)
+        self.drive_right = SimulatedTalon(2)
 
     def initialize(self, hal_data):
         hal_data.setdefault("custom", {})
 
     def update_sim(self, hal_data, now, dt):
-        drive_left_talon = hal_data["CAN"][1]
-        drive_right_talon = hal_data["CAN"][2]
+        pose = np.round(self.controller.get_position(), 2)
+        pose[0:2] *= 12
+        pose[2] = np.rad2deg(-pose[2])
+        hal_data["custom"]["Pose"] = np.round(pose, 2)
 
-        hal_data["custom"]["Pose"] = np.round(self.controller.get_position(), 2)
-        hal_data["robot"]["pigeon_device_3"] = -np.degrees(
-            self.controller.get_position()[2]
-        )
+        hal_data["robot"]["pigeon_device_3"] = pose[2]
 
-        vl = drive_left_talon["value"]
-        vr = drive_right_talon["value"]
-        speed, rotation = self.drivetrain.get_vector(vl, -vr)
-        self.controller.drive(speed, rotation, dt)
+        self.drive_left.update(hal_data, dt)
+        self.drive_right.update(hal_data, dt)
 
-        quad_vel_left = Chassis.ENCODER_TICKS_PER_METER * self.drivetrain.l_speed
-        quad_vel_right = Chassis.ENCODER_TICKS_PER_METER * self.drivetrain.r_speed
-        self.quad_pos_left += quad_vel_left * dt
-        self.quad_pos_right += quad_vel_right * dt
-        drive_left_talon["quad_position"] = int(self.quad_pos_left)
-        drive_right_talon["quad_position"] = int(self.quad_pos_right)
-        drive_left_talon["quad_velocity"] = quad_vel_left
-        drive_right_talon["quad_velocity"] = quad_vel_right
+        vl = self.drive_left.getSpeed(hal_data)
+        vr = self.drive_right.getSpeed(hal_data)
+
+        v, omega = self.drivetrain.getVelocities(vl, vr)
+
+        self.controller.drive(v, omega, dt)
+
