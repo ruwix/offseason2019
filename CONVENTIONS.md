@@ -23,7 +23,7 @@
 ## Units
 - Use of the `pint` module
 - Time: `seconds` (some native function use `ms`)
-- Length: `meters` (some native functions use `feet` or `native units`)
+- Length: `inches` (some native functions use `feet` or `native units`)
 - Angle: `degrees` (some native functions use `radians`)
 - Coordinates:
     - x: `left/right`
