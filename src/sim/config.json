@@ -3,7 +3,7 @@
     "robot": {
       "w": 2.3125,
       "h": 3,
-      "starting_x": 10,
+      "starting_x": 6,
       "starting_y": 10,
       "starting_angle": 0
     }
