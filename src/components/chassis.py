@@ -4,7 +4,6 @@ import ctre
 import numpy as np
 from networktables import NetworkTables
 from enum import Enum
-from pint import UnitRegistry
 
 
 class Chassis:
@@ -12,7 +11,6 @@ class Chassis:
     drive_motor_right: ctre.WPI_TalonSRX
     imu: ctre.PigeonIMU
 
-    units = UnitRegistry()
     X_WHEELBASE: float = 24
     Y_WHEELBASE: float = 24
 
@@ -51,17 +49,17 @@ class Chassis:
         NetworkTables.initialize()
         self.table = NetworkTables.getTable("RobotOdyssey")
 
-    def setOutput(self, vl, vr):
+    def setOutput(self, vl: float, vr: float) -> None:
         self.mode = self._Mode.PercentOutput
         self.vl = vl
         self.vr = vr
 
-    def setInput(self, speed, rotation):
+    def setInput(self, speed: float, rotation: float) -> None:
         self.mode = self._Mode.PercentOutput
         self.vl = speed + rotation
         self.vr = speed - rotation
 
-    def setVelocityInput(self, speed, rotation):
+    def setVelocityInput(self, speed: float, rotation: float) -> None:
         self.mode = self._Mode.Velocity
         vl = speed + rotation
         vr = speed - rotation
@@ -71,7 +69,7 @@ class Chassis:
             vr /= scale
         self.setPercentVelocity(vl, vr)
 
-    def setVelocity(self, vl, vr):
+    def setVelocity(self, vl: float, vr: float) -> None:
         self.mode = self._Mode.Velocity
         # if np.abs(vl) > self.MAX_VELOCITY or np.abs(vr) > self.MAX_VELOCITY:
         #     scale = self.MAX_VELOCITY / np.max((np.abs(vl), np.abs(vr)))
@@ -80,12 +78,12 @@ class Chassis:
         self.vl = int(vl * self.ENCODER_TICKS_PER_INCH) / 10
         self.vr = int(vr * self.ENCODER_TICKS_PER_INCH) / 10
 
-    def setPercentVelocity(self, vl, vr):
+    def setPercentVelocity(self, vl: float, vr: float) -> None:
         self.mode = self._Mode.Velocity
         self.vl = int(vl * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_INCH / 10)
         self.vr = int(vr * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_INCH / 10)
 
-    def updateOdometry(self, dt):
+    def updateOdometry(self, dt: float) -> None:
         self._current_encoder_pos = (
             self.drive_motor_left.getSelectedSensorPosition(0)
             + self.drive_motor_right.getSelectedSensorPosition(0)
@@ -111,13 +109,13 @@ class Chassis:
         self._last_encoder_pos = self._current_encoder_pos
         self._last_odometry = self.odometry
 
-    def setOdometry(self, x, y, theta):
+    def setOdometry(self, x: float, y: float, theta: float) -> None:
         self.odometry = np.array([x, y, theta])
 
-    def resetOdometry(self):
+    def resetOdometry(self) -> None:
         self.odometry = np.zeros(3)
 
-    def getWheelVelocities(self, v, omega):
+    def getWheelVelocities(self, v: float, omega: float) -> np.array:
         scale = 1
         if np.abs(v) > self.MAX_VELOCITY:
             scale = self.MAX_VELOCITY / v
@@ -127,7 +125,7 @@ class Chassis:
         right = v + np.deg2rad(omega) * self.X_WHEELBASE / 2.0
         return np.array([left, right])
 
-    def reset(self):
+    def reset(self) -> None:
         self.vl = 0
         self.vr = 0
         self.timestamp = 0

@@ -2,11 +2,11 @@ import numpy as np
 
 
 class Ramsete:
-    def __init__(self, kbeta, kzeta):
+    def __init__(self, kbeta: float, kzeta: float):
         self.kbeta = kbeta  # 0 < kbeta; larger kbeta makes convergence more aggresive
         self.kzeta = kzeta  # 0 < kzeta < 1; larger kbeta provides more damping
 
-    def update(self, pose, pose_d, vd):
+    def update(self, pose: np.array, pose_d: np.array, vd: np.array) -> np.array:
         pose[2] = np.deg2rad(pose[2])
         pose_d[2] = np.deg2rad(pose_d[2])
         vd[1] = np.deg2rad(vd[1])
@@ -32,5 +32,5 @@ class Ramsete:
             * (error[1] * cos_theta - error[0] * sin_theta)
             + k3 * error[2]
         )
-        return (v, np.rad2deg(omega))
+        return np.array([v, np.rad2deg(omega)])
 

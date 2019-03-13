@@ -69,6 +69,7 @@ class Robot(magicbot.MagicRobot):
                 state_d = self.trajectory.getState()
                 pose_d = state_d[0:3]
                 vd = state_d[3:5]
+                print(f"{pose} - {pose_d}")
                 v, omega = self.ramsete.update(pose, pose_d, vd)
                 wheels = self.chassis.getWheelVelocities(v, omega)
                 self.chassis.setVelocity(wheels[0], wheels[1])

@@ -14,7 +14,7 @@ class DriveTrain:
         self.vr = 0
         self.x_wheelbase = Chassis.X_WHEELBASE / 12
 
-    def getVelocities(self, vl, vr):
+    def getVelocities(self, vl: float, vr: float) -> np.array:
         vl /= 12
         vr /= 12
         v = (vl + vr) / 2
@@ -23,12 +23,12 @@ class DriveTrain:
 
 
 class SimulatedTalon:
-    def __init__(self, id):
+    def __init__(self, id: int):
         self.id = id
         self.quad_pos = 0
         self.quad_vel = 0
 
-    def getSpeed(self, hal_data):
+    def getSpeed(self, hal_data: dict) -> None:
         talon = hal_data["CAN"][self.id]
         if talon["control_mode"] == ControlMode.PercentOutput:
             speed = talon["value"] * Chassis.MAX_VELOCITY
@@ -36,7 +36,7 @@ class SimulatedTalon:
             speed = talon["pid0_target"] / Chassis.ENCODER_TICKS_PER_INCH * 10
         return speed
 
-    def update(self, hal_data, dt):
+    def update(self, hal_data: dict, dt: float) -> None:
         talon = hal_data["CAN"][self.id]
         self.quad_vel = self.getSpeed(hal_data) * Chassis.ENCODER_TICKS_PER_INCH
         self.quad_pos += self.quad_vel * dt
