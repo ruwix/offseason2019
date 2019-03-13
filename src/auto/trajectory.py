@@ -3,6 +3,8 @@ from csv import reader, writer
 from auto.hermitespline import HermiteSpline
 from pyfrc.sim import get_user_renderer
 
+from utils.geometry import RobotState
+
 
 class Trajectory:
     def __init__(self, poses: np.array, time: float, sample_size: float = 0.02):
@@ -29,28 +31,25 @@ class Trajectory:
     def update(self, t: float) -> None:
         self.timestamp = t
 
-    def getState(self) -> np.array:
+    def getState(self) -> RobotState:
         if not self.isFinished():
-            pose = np.round(
-                self.path.getPose(self.timestamp / (self.time / self.path.length)), 2
-            )
-            twist = np.round(
+            pose = self.path.getPose(self.timestamp / (self.time / self.path.length))
+            twist = (
                 self.path.getTwist(self.timestamp / (self.time / self.path.length))
-                / self.time,
-                2,
+                / self.time
             )
-            return np.append(pose, twist)
+            return RobotState(pose.x, pose.y, pose.theta, twist.v, twist.omega)
         else:
             return None
 
     def build(self) -> None:
         for i in range(0, int(self.path.length / self.sample_size)):
-            pose = np.round(self.path.getPose(i * self.sample_size).reshape((1, 3)), 2)
-            twist = np.round(
-                self.path.getTwist(i * self.sample_size).reshape((1, 2)) / self.time, 2
-            )
-            self.poses = np.append(self.poses, pose, axis=0)
-            self.velocities = np.append(self.velocities, twist, axis=0)
+            pose = self.path.getPose(i * self.sample_size)
+            twist = self.path.getTwist(i * self.sample_size) / self.time
+            _pose = np.array([pose.x, pose.y, pose.theta]).reshape((1, 3))
+            _twist = np.array([twist.v, twist.omega]).reshape((1, 2))
+            self.poses = np.append(self.poses, _pose, axis=0)
+            self.velocities = np.append(self.velocities, _twist, axis=0)
 
     def isFinished(self) -> float:
         return self.timestamp >= self.time

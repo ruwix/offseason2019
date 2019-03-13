@@ -4,6 +4,8 @@ import ctre
 import numpy as np
 from networktables import NetworkTables
 from enum import Enum
+from utils.geometry import RobotState, Twist
+from copy import copy
 
 
 class Chassis:
@@ -38,10 +40,8 @@ class Chassis:
         self.timestamp = 0
         self._last_timestamp = 0
 
-        self.odometry = np.empty(3)
-        self._last_odometry = np.empty(3)
-
-        self.velocity = np.empty(2)
+        self.state = RobotState(0, 0, 0, 0, 0)
+        self.last_state = RobotState(0, 0, 0, 0, 0)
 
         self._current_encoder_pos = 0
         self._last_encoder_pos = 0
@@ -83,37 +83,28 @@ class Chassis:
         self.vl = int(vl * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_INCH / 10)
         self.vr = int(vr * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_INCH / 10)
 
-    def updateOdometry(self, dt: float) -> None:
+    def updateState(self, dt: float) -> None:
         self._current_encoder_pos = (
             self.drive_motor_left.getSelectedSensorPosition(0)
             + self.drive_motor_right.getSelectedSensorPosition(0)
         ) / 2
         self._delta_encoder_pos = self._current_encoder_pos - self._last_encoder_pos
 
-        self.odometry[2] = self.imu.getYawPitchRoll()[0]
-        theta_radians = np.deg2rad(self.odometry[2])
-        self.odometry[0] += (
-            np.cos(theta_radians)
+        self.state.heading = self.imu.getYawPitchRoll()[0]
+        heading_radians = np.deg2rad(self.state.heading)
+        self.state.x += (
+            np.cos(heading_radians)
             * self._delta_encoder_pos
             / self.ENCODER_TICKS_PER_INCH
         )
-        self.odometry[1] -= (
-            np.sin(theta_radians)
+        self.state.y -= (
+            np.sin(heading_radians)
             * self._delta_encoder_pos
             / self.ENCODER_TICKS_PER_INCH
         )
-
-        velocity_all = (self.odometry - self._last_odometry) / dt
-        self.velocity[0] = np.hypot(velocity_all[0], velocity_all[1])
-        self.velocity[1] = velocity_all[2]
+        self.state.update(self.last_state, dt)
         self._last_encoder_pos = self._current_encoder_pos
-        self._last_odometry = self.odometry
-
-    def setOdometry(self, x: float, y: float, theta: float) -> None:
-        self.odometry = np.array([x, y, theta])
-
-    def resetOdometry(self) -> None:
-        self.odometry = np.zeros(3)
+        self.last_state = copy(self.state)
 
     def getWheelVelocities(self, v: float, omega: float) -> np.array:
         scale = 1
@@ -130,11 +121,9 @@ class Chassis:
         self.vr = 0
         self.timestamp = 0
         self._last_timestamp = 0
-        self.odometry = np.zeros(3)
-        self._last_odometry = np.zeros(3)
-        self.velocity = np.zeros(3)
-        self._last_velocity = np.zeros(3)
-        self.acceleration = np.zeros(3)
+        self.state = RobotState(0, 0, 0, 0, 0)
+        self.last_state = RobotState(0, 0, 0, 0, 0)
+
         self._current_encoder_pos = 0
         self._last_encoder_pos = 0
         self._delta_encoder_pos = 0
@@ -148,8 +137,8 @@ class Chassis:
         """Called periodically"""
         self.timestamp = self.timer.getFPGATimestamp()
         dt = self.timestamp - self._last_timestamp
-        self.updateOdometry(dt)
-        self.table.putNumberArray("Pose", self.odometry)
+        self.updateState(dt)
+        # self.table.putNumberArray("Pose", self.state)
 
         if self.mode == self._Mode.PercentOutput:
             self.drive_motor_left.set(

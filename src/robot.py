@@ -15,7 +15,7 @@ class Robot(magicbot.MagicRobot):
     VELOCITY_KI = 0.0
     VELOCITY_KD = 0.0
     VELOCITY_KF = 0.0
-    KBETA = 1.5
+    KBETA = 1.0
     KZETA = 0.7
 
     def createObjects(self):
@@ -48,7 +48,7 @@ class Robot(magicbot.MagicRobot):
         self.timer = wpilib.Timer()
 
         poses = Trajectory.loadPath("example.csv")
-        self.trajectory = Trajectory(poses, 10)
+        self.trajectory = Trajectory(poses, 60)
         self.trajectory.build()
         self.trajectory.drawSimulation()
         self.trajectory.writeCSV("output.csv")
@@ -65,13 +65,10 @@ class Robot(magicbot.MagicRobot):
             timestamp = self.timer.get()
             self.trajectory.update(timestamp)
             if not self.trajectory.isFinished():
-                pose = self.chassis.odometry
+                state = self.chassis.state
                 state_d = self.trajectory.getState()
-                pose_d = state_d[0:3]
-                vd = state_d[3:5]
-                print(f"{pose} - {pose_d}")
-                v, omega = self.ramsete.update(pose, pose_d, vd)
-                wheels = self.chassis.getWheelVelocities(v, omega)
+                twist = self.ramsete.update(state, state_d)
+                wheels = self.chassis.getWheelVelocities(twist.v, twist.omega)
                 self.chassis.setVelocity(wheels[0], wheels[1])
             else:
                 self.chassis.setVelocityInput(

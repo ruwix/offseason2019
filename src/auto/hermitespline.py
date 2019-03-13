@@ -1,4 +1,5 @@
 import numpy as np
+from utils.geometry import Vector, Pose, Twist, RobotState
 
 
 class HermiteSpline:
@@ -19,7 +20,7 @@ class HermiteSpline:
         self.dy = np.empty(self.length)
         self.computeCoefficients()
 
-    def getPoint(self, t: float) -> np.array:
+    def getPoint(self, t: float) -> Vector:
         """Interpolate a point along the spline where 0 <= t <= self.length."""
         assert 0 <= t <= self.length
         index = int(np.floor(t))
@@ -36,44 +37,44 @@ class HermiteSpline:
             + (self.cy[index] * t)
             + (self.dy[index])
         )
-        return np.array([x, y])
+        return Vector(x, y)
 
-    def getD(self, t: float) -> np.array:
+    def getD(self, t: float) -> Vector:
         """Interpolate the derivative along the spline where 0 <= t <= self.length."""
         assert 0 <= t <= self.length
         index = int(np.floor(t))
         t -= index
         dx = (3 * self.ax[index] * t ** 2) + (2 * self.bx[index] * t) + (self.cx[index])
         dy = (3 * self.ay[index] * t ** 2) + (2 * self.by[index] * t) + (self.cy[index])
-        return np.array([dx, dy])
+        return Vector(dx, dy)
 
-    def getDD(self, t: float) -> np.array:
+    def getDD(self, t: float) -> Vector:
         """Interpolate the 2nd derivative along the spline where 0 <= t <= self.length."""
         assert 0 <= t <= self.length
         index = int(np.floor(t))
         t -= index
         ddx = (6 * self.ax[index] * t) + (2 * self.bx[index])
         ddy = (6 * self.ay[index] * t) + (2 * self.by[index])
-        return np.array([ddx, ddy])
+        return Vector(ddx, ddy)
 
-    def getDDD(self, t: float) -> np.array:
+    def getDDD(self, t: float) -> Vector:
         """Interpolate the 3rd derivative along the spline where 0 <= t <= self.length."""
         assert 0 <= t <= self.length
         index = int(np.floor(t))
         t -= index
         dddx = 6 * self.ax[index]
         dddy = 6 * self.ay[index]
-        return np.array([dddx, dddy])
+        return Vector(dddx, dddy)
 
     def getCurvature(self, t: float) -> float:
         """Interpolate the curvature along the spline where 0 <= t <= self.length."""
         assert 0 <= t <= self.length
-        dx, dy = self.getD(t)
-        ddx, ddy = self.getDD(t)
-        dx2dy2 = dx ** 2 + dy ** 2
-        return (dx * ddy - dy * ddx) / (dx2dy2 ** 1.5)
+        d = self.getD(t)
+        dd = self.getDD(t)
+        dx2dy2 = d.x ** 2 + d.y ** 2
+        return (d.x * dd.y - d.y * dd.x) / (dx2dy2 ** 1.5)
 
-    def getRadius(self, t: float)  -> float:
+    def getRadius(self, t: float) -> float:
         """Interpolate the curvature along the spline where 0 <= t <= self.length."""
         c = self.getCurvature(t)
         if c == 0:
@@ -81,44 +82,44 @@ class HermiteSpline:
         else:
             return 1 / self.getCurvature(t)
 
-    def getDCurvature(self, t: float)  -> float:
+    def getDCurvature(self, t: float) -> float:
         assert 0 <= t <= self.length
         """Interpolate the derivative of the curvature along the spline where 0 <= t <= self.length."""
-        dx, dy = self.getD(t)
-        ddx, ddy = self.getDD(t)
-        dddx, dddy = self.getDDD(t)
-        dx2dy2 = dx ** 2 + dy ** 2
-        dc = (dx * dddy - dy * dddx) / (dx2dy2 ** 1.5) - 3 * (dx * ddy - dy * ddx) * (
-            dx * ddx + dy * ddy
-        ) / (dx2dy2 ** 2.5)
+        d = self.getD(t)
+        dd = self.getDD(t)
+        ddd = self.getDDD(t)
+        dx2dy2 = d.x ** 2 + d.y ** 2
+        dc = (d.x * ddd.y - d.y * ddd.x) / (dx2dy2 ** 1.5) - 3 * (
+            d.x * dd.y - d.y * dd.x
+        ) * (d.x * dd.x + d.y * dd.y) / (dx2dy2 ** 2.5)
         return dc
 
-    def getHeading(self, t: float)  -> float:
+    def getHeading(self, t: float) -> float:
         """Interpolate the angle of the tangent along the spline where 0 <= t <= self.length."""
-        dx, dy = self.getD(t)
-        return np.rad2deg(np.arctan2(dy, dx))
+        d = self.getD(t)
+        return np.rad2deg(np.arctan2(d.y, d.x))
 
-    def getPose(self, t: float)  -> np.array:
+    def getPose(self, t: float) -> Pose:
         """Interpolate the pose on the spline where 0 <= t <= self.length."""
-        points = self.getPoint(t)
+        point = self.getPoint(t)
         heading = self.getHeading(t)
-        return np.append(points, heading)
+        return Pose(point.x, point.y, heading)
 
     def getLinearVelocity(self, t: float) -> float:
         """Interpolate the linear velocity of a particle traveling along the spline where 0 <= t <= self.length."""
-        dx, dy = self.getD(t)
-        return np.hypot(dx, dy)
+        d = self.getD(t)
+        return d.getMagnitude()
 
     def getAngularVelocity(self, t: float) -> float:
         """Interpolate the angular velocity of a particle traveling along the spline where 0 <= t <= self.length."""
         omega = self.getLinearVelocity(t) / self.getRadius(t)
         return -np.rad2deg(omega)
 
-    def getTwist(self, t: float) -> np.array:
+    def getTwist(self, t: float) -> Twist:
         """Interpolate the twist of a particle traveling along the spline at timestamp t where 0 <= t <= self.length."""
         v = self.getLinearVelocity(t)
         omega = self.getAngularVelocity(t)
-        return np.append(v, omega)
+        return Twist(v, omega)
 
     def getArcLength(self, sample_size: float = 0.01) -> float:
         arc_length = 0
