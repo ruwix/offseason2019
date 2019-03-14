@@ -15,8 +15,8 @@ class Robot(magicbot.MagicRobot):
     VELOCITY_KI = 0.0
     VELOCITY_KD = 0.0
     VELOCITY_KF = 0.0
-    KBETA = 1.0
-    KZETA = 0.7
+    KBETA = 0.4
+    KZETA = 0.01
 
     def createObjects(self):
         np.set_printoptions(suppress=True)
@@ -48,7 +48,7 @@ class Robot(magicbot.MagicRobot):
         self.timer = wpilib.Timer()
 
         poses = Trajectory.loadPath("example.csv")
-        self.trajectory = Trajectory(poses, 60)
+        self.trajectory = Trajectory(poses, 10)
         self.trajectory.build()
         self.trajectory.drawSimulation()
         self.trajectory.writeCSV("output.csv")
