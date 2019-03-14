@@ -1,6 +1,14 @@
 import numpy as np
 
 
+def boundHalfRadians(theta):
+    while theta >= np.pi:
+        theta -= 2 * np.pi
+    while theta < -np.pi:
+        theta += 2 * np.pi
+    return theta
+
+
 class Vector:
     """Simple 2d vector."""
 

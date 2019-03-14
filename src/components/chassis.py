@@ -64,17 +64,17 @@ class Chassis:
         vl = speed + rotation
         vr = speed - rotation
         if np.abs(vl) > 1 or np.abs(vr) > 1:
-            scale = np.abs(np.max((vl, vr)))
+            scale = np.abs(np.max((np.abs(vl), np.abs(vr))))
             vl /= scale
             vr /= scale
         self.setPercentVelocity(vl, vr)
 
     def setVelocity(self, vl: float, vr: float) -> None:
         self.mode = self._Mode.Velocity
-        # if np.abs(vl) > self.MAX_VELOCITY or np.abs(vr) > self.MAX_VELOCITY:
-        #     scale = self.MAX_VELOCITY / np.max((np.abs(vl), np.abs(vr)))
-        #     vl *= scale
-        #     vr *= scale
+        if np.abs(vl) > self.MAX_VELOCITY or np.abs(vr) > self.MAX_VELOCITY:
+            scale = self.MAX_VELOCITY / np.max((np.abs(vl), np.abs(vr)))
+            vl *= scale
+            vr *= scale
         self.vl = int(vl * self.ENCODER_TICKS_PER_INCH) / 10
         self.vr = int(vr * self.ENCODER_TICKS_PER_INCH) / 10
 
@@ -90,15 +90,14 @@ class Chassis:
         ) / 2
         self._delta_encoder_pos = self._current_encoder_pos - self._last_encoder_pos
 
-        self.state.heading = self.imu.getYawPitchRoll()[0]
-        heading_radians = np.deg2rad(self.state.heading)
+        self.state.heading = np.deg2rad(self.imu.getYawPitchRoll()[0])
         self.state.x += (
-            np.cos(heading_radians)
+            np.cos(self.state.heading)
             * self._delta_encoder_pos
             / self.ENCODER_TICKS_PER_INCH
         )
-        self.state.y -= (
-            np.sin(heading_radians)
+        self.state.y += (
+            np.sin(self.state.heading)
             * self._delta_encoder_pos
             / self.ENCODER_TICKS_PER_INCH
         )
@@ -108,12 +107,12 @@ class Chassis:
 
     def getWheelVelocities(self, v: float, omega: float) -> np.array:
         scale = 1
-        if np.abs(v) > self.MAX_VELOCITY:
-            scale = self.MAX_VELOCITY / v
+        # if np.abs(v) > self.MAX_VELOCITY:
+        #     scale = self.MAX_VELOCITY / v
         v *= scale
         omega *= scale
-        left = v - np.deg2rad(omega) * self.X_WHEELBASE / 2.0
-        right = v + np.deg2rad(omega) * self.X_WHEELBASE / 2.0
+        left = v - omega * self.X_WHEELBASE / 2.0
+        right = v + omega * self.X_WHEELBASE / 2.0
         return np.array([left, right])
 
     def reset(self) -> None:
@@ -148,7 +147,6 @@ class Chassis:
                 ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vr
             )
         elif self.mode == self._Mode.Velocity:
-            # print(f"{self.vl} - {self.vr}")
             self.drive_motor_left.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vl)
             self.drive_motor_right.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vr)
         elif self.mode == self._Mode.PercentVelocity:

@@ -3,7 +3,7 @@ from csv import reader, writer
 from auto.hermitespline import HermiteSpline
 from pyfrc.sim import get_user_renderer
 
-from utils.geometry import RobotState
+from utils.geometry import RobotState, boundHalfRadians
 
 
 class Trajectory:
@@ -34,10 +34,9 @@ class Trajectory:
     def getState(self) -> RobotState:
         if not self.isFinished():
             pose = self.path.getPose(self.timestamp / (self.time / self.path.length))
-            twist = (
-                self.path.getTwist(self.timestamp / (self.time / self.path.length))
-                / self.time
-            )
+            twist = self.path.getTwist(self.timestamp / (self.time / self.path.length))
+            twist.omega = boundHalfRadians(twist.omega)
+            twist /= self.time
             return RobotState(pose.x, pose.y, pose.theta, twist.v, twist.omega)
         else:
             return None

@@ -97,7 +97,7 @@ class HermiteSpline:
     def getHeading(self, t: float) -> float:
         """Interpolate the angle of the tangent along the spline where 0 <= t <= self.length."""
         d = self.getD(t)
-        return np.rad2deg(np.arctan2(d.y, d.x))
+        return np.arctan2(d.y, d.x)
 
     def getPose(self, t: float) -> Pose:
         """Interpolate the pose on the spline where 0 <= t <= self.length."""
@@ -113,7 +113,7 @@ class HermiteSpline:
     def getAngularVelocity(self, t: float) -> float:
         """Interpolate the angular velocity of a particle traveling along the spline where 0 <= t <= self.length."""
         omega = self.getLinearVelocity(t) / self.getRadius(t)
-        return -np.rad2deg(omega)
+        return omega
 
     def getTwist(self, t: float) -> Twist:
         """Interpolate the twist of a particle traveling along the spline at timestamp t where 0 <= t <= self.length."""
@@ -124,9 +124,9 @@ class HermiteSpline:
     def getArcLength(self, sample_size: float = 0.01) -> float:
         arc_length = 0
         for i in range(0, self.length * int(1 / sample_size) - 1):
-            x0, y0 = self.getPoint(i * sample_size)
-            x1, y1 = self.getPoint((i + 1) * sample_size)
-            arc_length += np.hypot(x1 - x0, y1 - y0)
+            p0 = self.getPoint(i * sample_size)
+            p1 = self.getPoint((i + 1) * sample_size)
+            arc_length += p0.getDistance(p1)
         return arc_length
 
     def computeCoefficients(self) -> None:
@@ -136,8 +136,8 @@ class HermiteSpline:
                 self.poses[i + 1][0] - self.poses[i][0],
                 self.poses[i + 1][1] - self.poses[i][1],
             )
-            self.dx0[i] = scale * np.cos(np.deg2rad(-self.poses[i][2]))
-            self.dx1[i] = scale * np.cos(np.deg2rad(-self.poses[i + 1][2]))
+            self.dx0[i] = scale * np.cos(self.poses[i][2])
+            self.dx1[i] = scale * np.cos(self.poses[i + 1][2])
             self.ax[i] = (
                 self.dx0[i]
                 + self.dx1[i]
@@ -152,8 +152,8 @@ class HermiteSpline:
             )
             self.cx[i] = self.dx0[i]
             self.dx[i] = self.poses[i][0]
-            self.dy0[i] = scale * np.sin(np.deg2rad(-self.poses[i][2]))
-            self.dy1[i] = scale * np.sin(np.deg2rad(-self.poses[i + 1][2]))
+            self.dy0[i] = scale * np.sin(self.poses[i][2])
+            self.dy1[i] = scale * np.sin(self.poses[i + 1][2])
             self.ay[i] = (
                 self.dy0[i]
                 + self.dy1[i]

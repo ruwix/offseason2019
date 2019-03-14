@@ -55,12 +55,10 @@ class PhysicsEngine:
         hal_data.setdefault("custom", {})
 
     def update_sim(self, hal_data, now, dt):
-        pose = np.round(self.controller.get_position(), 2)
+        pose = np.array(self.controller.get_position())
         pose[0:2] *= 12
-        pose[2] = np.rad2deg(-pose[2])
         hal_data["custom"]["Pose"] = np.round(pose, 2)
-
-        hal_data["robot"]["pigeon_device_3"] = pose[2]
+        hal_data["robot"]["pigeon_device_3"] = np.rad2deg(pose[2])
 
         self.drive_left.update(hal_data, dt)
         self.drive_right.update(hal_data, dt)
