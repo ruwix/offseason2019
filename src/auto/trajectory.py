@@ -7,23 +7,15 @@ from utils.geometry import RobotState, boundHalfRadians
 
 
 class Trajectory:
-    def __init__(self, poses: np.array, time: float, sample_size: float = 0.02):
+    def __init__(
+        self, poses: np.array, time: float, inverted=False, sample_size: float = 0.02
+    ):
         self.path = HermiteSpline(poses)
-        self.poses = np.empty((0, 3))
-        self.velocities = np.empty((0, 2))
-        self.sample_size = sample_size
+        self.states = np.empty(0)
         self.time = time
+        self.inverted = inverted
+        self.sample_size = sample_size
         self.timestamp = 0
-
-    @staticmethod
-    def loadPath(file: str) -> np.array:
-        with open(file, "r") as path:
-            _reader = reader(path)
-            headings = next(_reader)
-            assert headings == ["x", "y", "heading"]
-            ret = np.array(list(_reader)).astype(float)
-            path.close()
-            return ret
 
     def getAverageVelocity(self) -> float:
         return self.path.getArcLength() / self.time
@@ -35,8 +27,10 @@ class Trajectory:
         if not self.isFinished():
             pose = self.path.getPose(self.timestamp / (self.time / self.path.length))
             twist = self.path.getTwist(self.timestamp / (self.time / self.path.length))
-            twist.omega = boundHalfRadians(twist.omega)
             twist /= self.time
+            if self.inverted:
+                pose.theta += np.pi
+                twist *= -1
             return RobotState(pose.x, pose.y, pose.theta, twist.v, twist.omega)
         else:
             return None
@@ -44,11 +38,13 @@ class Trajectory:
     def build(self) -> None:
         for i in range(0, int(self.path.length / self.sample_size)):
             pose = self.path.getPose(i * self.sample_size)
-            twist = self.path.getTwist(i * self.sample_size) / self.time
-            _pose = np.array([pose.x, pose.y, pose.theta]).reshape((1, 3))
-            _twist = np.array([twist.v, twist.omega]).reshape((1, 2))
-            self.poses = np.append(self.poses, _pose, axis=0)
-            self.velocities = np.append(self.velocities, _twist, axis=0)
+            twist = self.path.getTwist(i * self.sample_size)
+            twist /= self.time
+            if self.inverted:
+                pose.theta += np.pi
+                twist *= -1
+            state = RobotState(pose.x, pose.y, pose.theta, twist.v, twist.omega)
+            self.states = np.append(self.states, state)
 
     def isFinished(self) -> float:
         return self.timestamp >= self.time
@@ -57,9 +53,18 @@ class Trajectory:
         with open(filename, mode="w") as output:
             writer_ = writer(output, delimiter=",", quotechar='"')
             writer_.writerow(["x", "y", "heading", "v", "omega"])
-            data = np.concatenate((self.poses, self.velocities), axis=1)
+            data = np.empty((0, 5))
+            for state in self.states:
+                array = np.array(
+                    [state.x, state.y, state.heading, state.v, state.omega]
+                ).reshape((1, 5))
+                data = np.append(data, array, axis=0)
             writer_.writerows(data)
             output.close()
 
     def drawSimulation(self) -> None:
-        get_user_renderer().draw_line(self.poses[:, 0:2], scale=(1 / 12, 1 / 12))
+        points = np.empty((0, 2))
+        for state in self.states:
+            point = np.array([state.x, state.y]).reshape((1, 2))
+            points = np.append(points, point, axis=0)
+        get_user_renderer().draw_line(points, scale=(1 / 12, 1 / 12))
