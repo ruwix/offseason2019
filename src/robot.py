@@ -15,8 +15,8 @@ class Robot(magicbot.MagicRobot):
     VELOCITY_KI = 0.0
     VELOCITY_KD = 0.0
     VELOCITY_KF = 0.0
-    KBETA = 0.4
-    KZETA = 0.01
+    KBETA = 2.0
+    KZETA = 0.5
 
     def createObjects(self):
         np.set_printoptions(suppress=True)
@@ -47,11 +47,6 @@ class Robot(magicbot.MagicRobot):
         self.operator = wpilib.joystick.Joystick(1)
         self.timer = wpilib.Timer()
 
-        poses = Trajectory.loadPath("example.csv")
-        self.trajectory = Trajectory(poses, 10)
-        self.trajectory.build()
-        self.trajectory.drawSimulation()
-        self.trajectory.writeCSV("output.csv")
         self.ramsete = Ramsete(self.KBETA, self.KZETA)
 
     def teleopInit(self):
@@ -62,18 +57,9 @@ class Robot(magicbot.MagicRobot):
     def teleopPeriodic(self):
         """Called on each iteration of the control loop"""
         try:
-            timestamp = self.timer.get()
-            self.trajectory.update(timestamp)
-            if not self.trajectory.isFinished():
-                state = self.chassis.state
-                state_d = self.trajectory.getState()
-                twist = self.ramsete.update(state, state_d)
-                wheels = self.chassis.getWheelVelocities(twist.v, twist.omega)
-                self.chassis.setVelocity(wheels[0], wheels[1])
-            else:
-                self.chassis.setVelocityInput(
-                    -self.driver.getY(), self.driver.getThrottle()
-                )
+            self.chassis.setVelocityInput(
+                self.driver.getY(), self.driver.getThrottle()
+            )
         except:
             self.onException()
 
