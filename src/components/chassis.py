@@ -40,8 +40,8 @@ class Chassis:
         self.timestamp = 0
         self._last_timestamp = 0
 
-        self.state = RobotState(0, 0, 0, 0, 0)
-        self.last_state = RobotState(0, 0, 0, 0, 0)
+        self.state = RobotState(67, 119, 0, 0, 0)
+        self.last_state = self.state
 
         self._current_encoder_pos = 0
         self._last_encoder_pos = 0
@@ -111,8 +111,8 @@ class Chassis:
         #     scale = self.MAX_VELOCITY / v
         v *= scale
         omega *= scale
-        left = v - omega * self.X_WHEELBASE / 2.0
-        right = v + omega * self.X_WHEELBASE / 2.0
+        left = v + omega * self.X_WHEELBASE / 2.0
+        right = v - omega * self.X_WHEELBASE / 2.0
         return np.array([left, right])
 
     def reset(self) -> None:

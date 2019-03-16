@@ -3,9 +3,9 @@
     "robot": {
       "w": 2.3125,
       "h": 3,
-      "starting_x":0,
-      "starting_y": 0,
-      "starting_angle": 180
+      "starting_x": 5.583,
+      "starting_y": 9.917,
+      "starting_angle": 0
     }
   }
 }
