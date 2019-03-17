@@ -23,10 +23,11 @@ class Autonomous(AutonomousStateMachine):
 
     def __init__(self):
         self.timer = wpilib.Timer()
+        self.trajectory = None
 
     @state(first=True)
     def initMode(self, initial_call):
-        value = 0  # self.clickcounter.getValue()
+        value = 1  # self.clickcounter.getValue()
         if value == 0:
             self.next_state("crossLine")
         elif value == 1:
@@ -35,6 +36,8 @@ class Autonomous(AutonomousStateMachine):
             self.next_state("stop")
 
     def followTrajectory(self):
+        if self.trajectory == None:
+            return False
         self.trajectory.update(self.timer.get())
         if not self.trajectory.isFinished():
             state = self.chassis.state
