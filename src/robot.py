@@ -59,7 +59,9 @@ class Robot(magicbot.MagicRobot):
     def teleopPeriodic(self):
         """Called on each iteration of the control loop"""
         try:
-            self.chassis.setVelocityInput(self.driver.getY(), self.driver.getThrottle())
+            self.chassis.setVelocityInput(
+                -self.driver.getY(), self.driver.getThrottle()
+            )
         except:
             self.onException()
 
