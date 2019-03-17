@@ -15,7 +15,6 @@ def loadPath(file: str) -> np.array:
         for i in range(0, len(ret)):
             ret[i][2] = np.deg2rad(-ret[i][2])
             print(ret[i][2])
-
         path.close()
         return ret
 

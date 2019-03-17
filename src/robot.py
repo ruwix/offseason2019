@@ -3,13 +3,15 @@ import magicbot
 import wpilib
 import ctre
 from components.chassis import Chassis
-from auto.trajectory import Trajectory
+from components.clickcounter import ClickCounter
+from autonomous.trajectory import Trajectory
 import numpy as np
-from auto.ramsete import Ramsete
+from autonomous.ramsete import Ramsete
 
 
 class Robot(magicbot.MagicRobot):
     chassis: Chassis
+    clickcounter: ClickCounter
 
     VELOCITY_KP = 0.0
     VELOCITY_KI = 0.0
@@ -57,9 +59,7 @@ class Robot(magicbot.MagicRobot):
     def teleopPeriodic(self):
         """Called on each iteration of the control loop"""
         try:
-            self.chassis.setVelocityInput(
-                self.driver.getY(), self.driver.getThrottle()
-            )
+            self.chassis.setVelocityInput(self.driver.getY(), self.driver.getThrottle())
         except:
             self.onException()
 

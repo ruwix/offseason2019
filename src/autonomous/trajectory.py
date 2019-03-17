@@ -1,6 +1,6 @@
 import numpy as np
 from csv import reader, writer
-from auto.hermitespline import HermiteSpline
+from autonomous.hermitespline import HermiteSpline
 from pyfrc.sim import get_user_renderer
 
 from utils.geometry import RobotState, boundHalfRadians
@@ -8,12 +8,12 @@ from utils.geometry import RobotState, boundHalfRadians
 
 class Trajectory:
     def __init__(
-        self, poses: np.array, time: float, inverted=False, sample_size: float = 0.02
+        self, poses: np.array, time: float, reversed=False, sample_size: float = 0.02
     ):
         self.path = HermiteSpline(poses)
         self.states = np.empty(0)
         self.time = time
-        self.inverted = inverted
+        self.reversed = reversed
         self.sample_size = sample_size
         self.timestamp = 0
 
@@ -28,7 +28,7 @@ class Trajectory:
             pose = self.path.getPose(self.timestamp / (self.time / self.path.length))
             twist = self.path.getTwist(self.timestamp / (self.time / self.path.length))
             twist /= self.time
-            if self.inverted:
+            if self.reversed:
                 pose.theta += np.pi
                 twist *= -1
             return RobotState(pose.x, pose.y, pose.theta, twist.v, twist.omega)
@@ -40,7 +40,7 @@ class Trajectory:
             pose = self.path.getPose(i * self.sample_size)
             twist = self.path.getTwist(i * self.sample_size)
             twist /= self.time
-            if self.inverted:
+            if self.reversed:
                 pose.theta += np.pi
                 twist *= -1
             state = RobotState(pose.x, pose.y, pose.theta, twist.v, twist.omega)
