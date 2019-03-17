@@ -3,7 +3,7 @@ import magicbot
 import wpilib
 import ctre
 from components.chassis import Chassis
-from components.clickcounter import ClickCounter
+from components.autoselector import AutoSelector
 from autonomous.trajectory import Trajectory
 import numpy as np
 from autonomous.ramsete import Ramsete
@@ -11,7 +11,7 @@ from autonomous.ramsete import Ramsete
 
 class Robot(magicbot.MagicRobot):
     chassis: Chassis
-    clickcounter: ClickCounter
+    autoselector: AutoSelector
 
     VELOCITY_KP = 0.0
     VELOCITY_KI = 0.0

@@ -3,7 +3,7 @@ import wpilib
 
 # this is one of your components
 from components.chassis import Chassis
-from components.clickcounter import ClickCounter
+from components.autoselector import AutoSelector, AutoSide, AutoMode
 
 from autonomous.ramsete import Ramsete
 from autonomous.trajectory import Trajectory
@@ -19,7 +19,7 @@ class Autonomous(AutonomousStateMachine):
     # Injected from the definition in robot.py
     chassis: Chassis
     ramsete: Ramsete
-    clickcounter: ClickCounter
+    autoselector: AutoSelector
 
     def __init__(self):
         self.timer = wpilib.Timer()
@@ -27,10 +27,10 @@ class Autonomous(AutonomousStateMachine):
 
     @state(first=True)
     def initMode(self, initial_call):
-        value = 1  # self.clickcounter.getValue()
-        if value == 0:
+        side, mode = AutoSide.LEFT, AutoMode.ROCKET  # self.autoselector.getSelection()
+        if mode == 0:
             self.next_state("crossLine")
-        elif value == 1:
+        elif side == AutoSide.LEFT and mode == AutoMode.ROCKET:
             self.next_state("leftStartToRocket")
         else:
             self.next_state("stop")
