@@ -61,7 +61,7 @@ class Autonomous(AutonomousStateMachine):
                 Path.START_2_LEFT_ROCKET.getPoses(), 5, reversed=False
             )
             self.trajectory.build()
-            self.trajectory.writeCSV("output.csv")
+            self.trajectory.writeCSV("logs/output.csv")
             self.trajectory.drawSimulation()
             self.timer.reset()
             self.timer.start()
@@ -75,7 +75,7 @@ class Autonomous(AutonomousStateMachine):
                 Path.LEFT_ROCKET_2_LOADING_STATION.getPoses(), 5, reversed=True
             )
             self.trajectory.build()
-            self.trajectory.writeCSV("output.csv")
+            self.trajectory.writeCSV("logs/output.csv")
             self.trajectory.drawSimulation()
             self.timer.reset()
             self.timer.start()
