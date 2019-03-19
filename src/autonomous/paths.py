@@ -19,11 +19,8 @@ def loadPath(file: str) -> np.array:
 
 
 class Path(Enum):
-    EXAMPLE = "example.csv"
     START_2_LEFT_ROCKET = "start2leftrocket.csv"
     LEFT_ROCKET_2_LOADING_STATION = "leftrocket2loadingstation.csv"
-    START_2_LEFT_BAY = "start2leftbay.csv"
-    LEFT_BAY_2_LOADING_STATION = "leftbay2loadingstation.csv"
     CIRCLE = "circle.csv"
 
     def getPoses(self):

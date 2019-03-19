@@ -66,6 +66,20 @@ class Autonomous(AutonomousStateMachine):
             self.timer.reset()
             self.timer.start()
         if not self.followTrajectory():
+            self.next_state("leftRocketToLoadingStation")
+
+    @state
+    def leftRocketToLoadingStation(self, initial_call):
+        if initial_call:
+            self.trajectory = Trajectory(
+                Path.LEFT_ROCKET_2_LOADING_STATION.getPoses(), 5, reversed=True
+            )
+            self.trajectory.build()
+            self.trajectory.writeCSV("output.csv")
+            self.trajectory.drawSimulation()
+            self.timer.reset()
+            self.timer.start()
+        if not self.followTrajectory():
             self.next_state("stop")
 
     @state

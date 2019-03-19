@@ -5,8 +5,8 @@ import ctre
 from components.chassis import Chassis
 from components.autoselector import AutoSelector
 from autonomous.trajectory import Trajectory
-import numpy as np
 from autonomous.ramsete import Ramsete
+import numpy as np
 
 
 class Robot(magicbot.MagicRobot):
@@ -18,7 +18,7 @@ class Robot(magicbot.MagicRobot):
     VELOCITY_KD = 0.0
     VELOCITY_KF = 0.0
     KBETA = 2.0
-    KZETA = 0.5
+    KZETA = 0.7
 
     def createObjects(self):
         np.set_printoptions(suppress=True)
