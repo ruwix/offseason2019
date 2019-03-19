@@ -23,8 +23,8 @@
 ## Units
 - Use of the `pint` module
 - Time: `seconds` (some native function use `ms`)
-- Length: `inches` (some native functions use `feet` or `native units`)
-- Angle: `degrees` (some native functions use `radians`)
+- Length: `meters` (some native functions use `feet` or `native units`)
+- Angle: `radians` (some native functions use `degrees`; paths are saved as `degrees` but are converted to `radians` when imported)
 - Coordinates:
     - x: `left/right`
     - y: `backwards/forwards`

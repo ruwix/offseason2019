@@ -6,6 +6,7 @@ from networktables import NetworkTables
 from enum import Enum
 from utils.geometry import RobotState, Twist
 from copy import copy
+from utils import units
 
 
 class Chassis:
@@ -13,17 +14,17 @@ class Chassis:
     drive_motor_right: ctre.WPI_TalonSRX
     imu: ctre.PigeonIMU
 
-    X_WHEELBASE: float = 24
-    Y_WHEELBASE: float = 24
+    X_WHEELBASE: float = 24 * units.meters_per_inch
+    Y_WHEELBASE: float = 24 * units.meters_per_inch
 
-    WHEEL_DIAMETER: float = 6
+    WHEEL_DIAMETER: float = 6 * units.meters_per_inch
     WHEEL_CIRCUMFERENCE: float = np.pi * WHEEL_DIAMETER
 
     ENCODER_CPR: int = 4096
     ENCODER_GEAR_REDUCTION: int = 1
 
-    ENCODER_TICKS_PER_INCH: float = ENCODER_CPR * ENCODER_GEAR_REDUCTION / WHEEL_CIRCUMFERENCE
-    MAX_VELOCITY: float = 120
+    ENCODER_TICKS_PER_METER: float = ENCODER_CPR * ENCODER_GEAR_REDUCTION / WHEEL_CIRCUMFERENCE
+    MAX_VELOCITY: float = 3
 
     class _Mode(Enum):
         PercentOutput = 0
@@ -40,7 +41,9 @@ class Chassis:
         self.timestamp = 0
         self._last_timestamp = 0
 
-        self.state = RobotState(67, 119, 0, 0, 0)
+        self.state = RobotState(
+            67 * units.meters_per_inch, 119 * units.meters_per_inch, 0, 0, 0
+        )
         self.last_state = self.state
 
         self._current_encoder_pos = 0
@@ -75,13 +78,13 @@ class Chassis:
             scale = self.MAX_VELOCITY / np.max((np.abs(vl), np.abs(vr)))
             vl *= scale
             vr *= scale
-        self.vl = int(vl * self.ENCODER_TICKS_PER_INCH) / 10
-        self.vr = int(vr * self.ENCODER_TICKS_PER_INCH) / 10
+        self.vl = int(vl * self.ENCODER_TICKS_PER_METER) / 10
+        self.vr = int(vr * self.ENCODER_TICKS_PER_METER) / 10
 
     def setPercentVelocity(self, vl: float, vr: float) -> None:
         self.mode = self._Mode.Velocity
-        self.vl = int(vl * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_INCH / 10)
-        self.vr = int(vr * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_INCH / 10)
+        self.vl = int(vl * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_METER / 10)
+        self.vr = int(vr * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_METER / 10)
 
     def updateState(self, dt: float) -> None:
         self._current_encoder_pos = (
@@ -94,12 +97,12 @@ class Chassis:
         self.state.x += (
             np.cos(self.state.heading)
             * self._delta_encoder_pos
-            / self.ENCODER_TICKS_PER_INCH
+            / self.ENCODER_TICKS_PER_METER
         )
         self.state.y += (
             np.sin(self.state.heading)
             * self._delta_encoder_pos
-            / self.ENCODER_TICKS_PER_INCH
+            / self.ENCODER_TICKS_PER_METER
         )
         self.state.update(self.last_state, dt)
         self._last_encoder_pos = self._current_encoder_pos

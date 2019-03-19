@@ -2,6 +2,7 @@ import numpy as np
 
 from components.chassis import Chassis
 from ctre import ControlMode
+from utils import units
 
 
 class DriveTrain:
@@ -19,28 +20,36 @@ class PhysicsController:
         self.controller = controller
 
     def drive(self, v: float, omega: float, dt: float) -> None:
-        self.controller.drive(v / 12, omega, dt)
+        self.controller.drive(v * units.feet_per_meter, omega, dt)
 
     def distanceDrive(self, x: float, y: float, angle: float) -> None:
-        self.controller.distance_drive(x / 12, y / 12, angle)
+        self.controller.distance_drive(
+            x * units.feet_per_meter, y * units.feet_per_meter, angle
+        )
 
     def vectorDrive(self, vx: float, vy: float, omega: float, dt: float) -> None:
-        self.controller.drive(vx / 12, vy / 12, omega, dt)
+        self.controller.drive(
+            vx * units.feet_per_meter, vy * units.feet_per_meter, omega, dt
+        )
 
     def getOffset(self, x: float, y: float) -> np.array:
-        offset = self.controller.get_offset(x / 12, y / 12)
-        return np.array([offset[0] * 12, np.deg2rad(offset[1])])
+        offset = self.controller.get_offset(
+            x * units.feet_per_meter, y * units.feet_per_meter
+        )
+        return np.array([offset[0] * units.meters_per_foot, np.deg2rad(offset[1])])
 
     def getPosition(self) -> np.array:
         pos = self.controller.get_position()
-        return np.array([pos[0] * 12, pos[1] * 12, pos[2]])
+        return np.array(
+            [pos[0] * units.meters_per_foot, pos[1] * units.meters_per_foot, pos[2]]
+        )
 
 
 class SimulatedDriveTalon:
-    def __init__(self, id: int, max_velocity: float, ticks_per_inch: int):
+    def __init__(self, id: int, max_velocity: float, ticks_per_meter: int):
         self.id = id
         self.max_velocity = max_velocity
-        self.ticks_per_inch = ticks_per_inch
+        self.ticks_per_meter = ticks_per_meter
         self.quad_pos = 0
         self.quad_vel = 0
 
@@ -49,12 +58,12 @@ class SimulatedDriveTalon:
         if talon["control_mode"] == ControlMode.PercentOutput:
             velocity = talon["value"] * self.max_velocity
         elif talon["control_mode"] == ControlMode.Velocity:
-            velocity = talon["pid0_target"] / self.ticks_per_inch * 10
+            velocity = talon["pid0_target"] / self.ticks_per_meter * 10
         return velocity
 
     def update(self, hal_data: dict, dt: float) -> None:
         talon = hal_data["CAN"][self.id]
-        self.quad_vel = self.getVelocity(hal_data) * self.ticks_per_inch
+        self.quad_vel = self.getVelocity(hal_data) * self.ticks_per_meter
         self.quad_pos += self.quad_vel * dt
         talon["quad_position"] = int(self.quad_pos)
         talon["quad_velocity"] = int(self.quad_vel)
@@ -65,10 +74,10 @@ class PhysicsEngine:
         self.controller = PhysicsController(controller)
         self.drivetrain = DriveTrain(Chassis.X_WHEELBASE)
         self.drive_left = SimulatedDriveTalon(
-            1, Chassis.MAX_VELOCITY, Chassis.ENCODER_TICKS_PER_INCH
+            1, Chassis.MAX_VELOCITY, Chassis.ENCODER_TICKS_PER_METER
         )
         self.drive_right = SimulatedDriveTalon(
-            2, Chassis.MAX_VELOCITY, Chassis.ENCODER_TICKS_PER_INCH
+            2, Chassis.MAX_VELOCITY, Chassis.ENCODER_TICKS_PER_METER
         )
 
     def initialize(self, hal_data):

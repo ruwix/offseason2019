@@ -4,12 +4,16 @@ from autonomous.hermitespline import HermiteSpline
 from pyfrc.sim import get_user_renderer
 
 from utils.geometry import RobotState, boundHalfRadians
+from utils import units
 
 
 class Trajectory:
     def __init__(
         self, poses: np.array, time: float, reversed=False, sample_size: float = 0.02
     ):
+        if reversed:
+            for i in range(0, len(poses)):
+                poses[i][2] += np.pi
         self.path = HermiteSpline(poses)
         self.states = np.empty(0)
         self.time = time
@@ -67,4 +71,6 @@ class Trajectory:
         for state in self.states:
             point = np.array([state.x, state.y]).reshape((1, 2))
             points = np.append(points, point, axis=0)
-        get_user_renderer().draw_line(points, scale=(1 / 12, 1 / 12))
+        get_user_renderer().draw_line(
+            points, scale=(units.feet_per_meter, units.feet_per_meter)
+        )
