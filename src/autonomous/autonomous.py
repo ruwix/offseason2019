@@ -1,7 +1,6 @@
 from magicbot import AutonomousStateMachine, timed_state, state
 import wpilib
 
-# this is one of your components
 from components.chassis import Chassis
 from components.autoselector import AutoSelector, AutoSide, AutoMode
 
@@ -16,7 +15,6 @@ class Autonomous(AutonomousStateMachine):
     MODE_NAME = "Autonomous"
     DEFAULT = True
 
-    # Injected from the definition in robot.py
     chassis: Chassis
     ramsete: Ramsete
     autoselector: AutoSelector
@@ -43,7 +41,9 @@ class Autonomous(AutonomousStateMachine):
             state = self.chassis.state
             state_d = self.trajectory.getState()
             twist = self.ramsete.update(state, state_d)
-            print(self.ramsete.getError())
+            print(
+                f"{np.round(self.timer.getMsClock()/1000,5)}: {self.ramsete.getError()}"
+            )
             wheels = self.chassis.getWheelVelocities(twist.v, twist.omega)
             self.chassis.setVelocity(wheels[0], wheels[1])
             return True
@@ -58,7 +58,21 @@ class Autonomous(AutonomousStateMachine):
     def leftStartToRocket(self, initial_call):
         if initial_call:
             self.trajectory = Trajectory(
-                Path.START_2_LEFT_ROCKET.getPoses(), 5, reversed=False
+                Path.START_2_LEFT_ROCKET.getPoses(), 3, reversed=False
+            )
+            self.trajectory.build()
+            self.trajectory.writeCSV("logs/output.csv")
+            self.trajectory.drawSimulation()
+            self.timer.reset()
+            self.timer.start()
+        if not self.followTrajectory():
+            self.next_state("leftRocketBackup")
+
+    @state
+    def leftRocketBackup(self, initial_call):
+        if initial_call:
+            self.trajectory = Trajectory(
+                Path.LEFT_ROCKET_BACKUP.getPoses(), 0.5, reversed=True
             )
             self.trajectory.build()
             self.trajectory.writeCSV("logs/output.csv")
@@ -72,7 +86,35 @@ class Autonomous(AutonomousStateMachine):
     def leftRocketToLoadingStation(self, initial_call):
         if initial_call:
             self.trajectory = Trajectory(
-                Path.LEFT_ROCKET_2_LOADING_STATION.getPoses(), 5, reversed=True
+                Path.LEFT_ROCKET_2_LOADING_STATION.getPoses(), 3, reversed=False
+            )
+            self.trajectory.build()
+            self.trajectory.writeCSV("logs/output.csv")
+            self.trajectory.drawSimulation()
+            self.timer.reset()
+            self.timer.start()
+        if not self.followTrajectory():
+            self.next_state("loadingStationBackup")
+
+    @state
+    def loadingStationBackup(self, initial_call):
+        if initial_call:
+            self.trajectory = Trajectory(
+                Path.LOADING_STATION_BACKUP.getPoses(), 0.5, reversed=True
+            )
+            self.trajectory.build()
+            self.trajectory.writeCSV("logs/output.csv")
+            self.trajectory.drawSimulation()
+            self.timer.reset()
+            self.timer.start()
+        if not self.followTrajectory():
+            self.next_state("loadingStationToLeftRocket")
+
+    @state
+    def loadingStationToLeftRocket(self, initial_call):
+        if initial_call:
+            self.trajectory = Trajectory(
+                Path.LOADING_STATION_2_LEFT_ROCKET.getPoses(), 3, reversed=False
             )
             self.trajectory.build()
             self.trajectory.writeCSV("logs/output.csv")
