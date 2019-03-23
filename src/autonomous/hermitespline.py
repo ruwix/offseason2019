@@ -168,4 +168,3 @@ class HermiteSpline:
             )
             self.cy[i] = self.dy0[i]
             self.dy[i] = self.poses[i][1]
-

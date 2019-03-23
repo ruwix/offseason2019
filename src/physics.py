@@ -79,14 +79,18 @@ class PhysicsEngine:
         self.drive_right = SimulatedDriveTalon(
             2, Chassis.MAX_VELOCITY, Chassis.ENCODER_TICKS_PER_METER
         )
+        self.pose = self.controller.getPosition()
+        self.last_pose = self.controller.getPosition()
 
     def initialize(self, hal_data):
         hal_data.setdefault("custom", {})
 
     def update_sim(self, hal_data, now, dt):
-        pose = self.controller.getPosition()
-        hal_data["custom"]["Pose"] = np.round(pose, 2)
-        hal_data["robot"]["pigeon_device_3"] = np.rad2deg(pose[2])
+        self.pose = self.controller.getPosition()
+        hal_data["custom"]["Pose"] = np.round(self.pose, 2)
+        hal_data["custom"]["Velocity"] = np.round((self.last_pose - self.pose) / dt, 2)
+
+        hal_data["robot"]["pigeon_device_3"] = np.rad2deg(self.pose[2])
 
         self.drive_left.update(hal_data, dt)
         self.drive_right.update(hal_data, dt)
@@ -97,4 +101,4 @@ class PhysicsEngine:
         v, omega = self.drivetrain.getVelocities(vl, vr)
 
         self.controller.drive(v, omega, dt)
-
+        self.last_pose = self.pose

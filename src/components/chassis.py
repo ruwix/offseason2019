@@ -50,7 +50,12 @@ class Chassis:
         self._last_encoder_pos = 0
         self._delta_encoder_pos = 0
         NetworkTables.initialize()
-        self.table = NetworkTables.getTable("RobotOdyssey")
+        self.table = NetworkTables.getTable("Ariadne")
+
+    def setState(self, x, y, heading):
+        self.state.x = x
+        self.state.y = y
+        self.state.heading = heading
 
     def setOutput(self, vl: float, vr: float) -> None:
         self.mode = self._Mode.PercentOutput
@@ -140,7 +145,9 @@ class Chassis:
         self.timestamp = self.timer.getFPGATimestamp()
         dt = self.timestamp - self._last_timestamp
         self.updateState(dt)
-        # self.table.putNumberArray("Pose", self.state)
+        self.table.putNumberArray(
+            "Pose", np.array([self.state.x, self.state.y, self.state.heading])
+        )
 
         if self.mode == self._Mode.PercentOutput:
             self.drive_motor_left.set(
@@ -156,4 +163,3 @@ class Chassis:
             self.drive_motor_left.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vl)
             self.drive_motor_right.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vr)
         self._last_timestamp = self.timestamp
-

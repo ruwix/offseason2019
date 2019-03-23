@@ -72,5 +72,8 @@ class Trajectory:
             point = np.array([state.x, state.y]).reshape((1, 2))
             points = np.append(points, point, axis=0)
         get_user_renderer().draw_line(
-            points, scale=(units.feet_per_meter, units.feet_per_meter)
+            points,
+            scale=(units.feet_per_meter, units.feet_per_meter),
+            color="#FFFFFF",
+            width=2,
         )
