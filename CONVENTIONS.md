@@ -21,10 +21,11 @@
     - `class DriveTrain:`
 
 ## Units
-- Use of the `pint` module
 - Time: `seconds` (some native function use `ms`)
 - Length: `meters` (some native functions use `feet` or `native units`)
-- Angle: `radians` (some native functions use `degrees`; paths are saved as `degrees` but are converted to `radians` when imported)
+- Angle: `radians` (some native functions use `degrees`; paths are saved with `degrees` but are converted to `radians` when imported)
+- Weight: `kilograms`
+
 - Coordinates:
     - x: `left/right`
     - y: `backwards/forwards`
