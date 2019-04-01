@@ -32,7 +32,7 @@ class Ramsete:
             * (self.error.y * cos_theta - self.error.x * sin_theta)
             + k3 * self.error.heading
         )
-        return Twist(v, omega)
+        return Twist(v, 0, omega)
 
     def getError(self):
         return self.error
