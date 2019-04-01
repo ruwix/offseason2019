@@ -1,6 +1,8 @@
 import numpy as np
 from csv import reader, writer
-from autonomous.hermitespline import HermiteSpline
+from autonomous.quintichermitespline import QuinticHermiteSpline
+from autonomous.cubichermitespline import CubicHermiteSpline
+
 from pyfrc.sim import get_user_renderer
 
 from utils.geometry import RobotState, boundHalfRadians
@@ -13,8 +15,10 @@ class Trajectory:
     ):
         if reversed:
             for i in range(0, len(poses)):
-                poses[i][2] += np.pi
-        self.path = HermiteSpline(poses)
+                poses[i].theta += np.pi
+        # self.path = CubicHermiteSpline(poses)
+        self.path = QuinticHermiteSpline(poses)
+        QuinticHermiteSpline.optimizeSpline(self.path)
         self.states = np.empty(0)
         self.time = time
         self.reversed = reversed
@@ -26,16 +30,17 @@ class Trajectory:
 
     def update(self, t: float) -> None:
         self.timestamp = t
+        self.t = self.timestamp / (self.time / self.path.length)
 
     def getState(self) -> RobotState:
         if not self.isFinished():
-            pose = self.path.getPose(self.timestamp / (self.time / self.path.length))
-            twist = self.path.getTwist(self.timestamp / (self.time / self.path.length))
+            pose = self.path.getPose(self.t)
+            twist = self.path.getTwist(self.t)
             twist /= self.time
             if self.reversed:
                 pose.theta += np.pi
                 twist *= -1
-            return RobotState(pose.x, pose.y, pose.theta, twist.v, twist.omega)
+            return RobotState(pose.x, pose.y, pose.theta, twist.x, twist.omega)
         else:
             return None
 
@@ -47,7 +52,7 @@ class Trajectory:
             if self.reversed:
                 pose.theta += np.pi
                 twist *= -1
-            state = RobotState(pose.x, pose.y, pose.theta, twist.v, twist.omega)
+            state = RobotState(pose.x, pose.y, pose.theta, twist.x, twist.omega)
             self.states = np.append(self.states, state)
 
     def isFinished(self) -> float:
@@ -62,6 +67,7 @@ class Trajectory:
                 array = np.array(
                     [state.x, state.y, state.heading, state.v, state.omega]
                 ).reshape((1, 5))
+                array = np.round(array, 2)
                 data = np.append(data, array, axis=0)
             writer_.writerows(data)
             output.close()
@@ -69,7 +75,7 @@ class Trajectory:
     def drawSimulation(self) -> None:
         points = np.empty((0, 2))
         for state in self.states:
-            point = np.array([state.x, state.y]).reshape((1, 2))
+            point = np.array([state.x, state.y + 4.1148]).reshape((1, 2))
             points = np.append(points, point, axis=0)
         get_user_renderer().draw_line(
             points,

@@ -3,6 +3,7 @@ from csv import reader, writer
 from enum import Enum
 import paths
 import os
+from utils.geometry import Pose
 
 
 def loadPath(file: str) -> np.array:
@@ -11,9 +12,10 @@ def loadPath(file: str) -> np.array:
         _reader = reader(path)
         headings = next(_reader)
         assert headings == ["x", "y", "heading"]
-        ret = np.array(list(_reader)).astype(float)
-        for i in range(0, len(ret)):
-            ret[i][2] = np.deg2rad(-ret[i][2])
+        data = np.array(list(_reader)).astype(float)
+        ret = np.empty(len(data), dtype=Pose)
+        for i, pose in enumerate(data):
+            ret[i] = Pose(pose[0], pose[1], np.deg2rad(-pose[2]))
         path.close()
         return ret
 
