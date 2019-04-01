@@ -41,9 +41,7 @@ class Chassis:
         self.timestamp = 0
         self._last_timestamp = 0
 
-        self.state = RobotState(
-            67 * units.meters_per_inch, 119 * units.meters_per_inch, 0, 0, 0
-        )
+        self.state = RobotState(0, 0, 0, 0, 0)
         self.last_state = self.state
 
         self._current_encoder_pos = 0
@@ -52,32 +50,12 @@ class Chassis:
         NetworkTables.initialize()
         self.table = NetworkTables.getTable("Ariadne")
 
-    def setState(self, x, y, heading):
-        self.state.x = x
-        self.state.y = y
-        self.state.heading = heading
-
-    def setOutput(self, vl: float, vr: float) -> None:
+    def setWheelOutput(self, vl: float, vr: float) -> None:
         self.mode = self._Mode.PercentOutput
         self.vl = vl
         self.vr = vr
 
-    def setInput(self, speed: float, rotation: float) -> None:
-        self.mode = self._Mode.PercentOutput
-        self.vl = speed + rotation
-        self.vr = speed - rotation
-
-    def setVelocityInput(self, speed: float, rotation: float) -> None:
-        self.mode = self._Mode.Velocity
-        vl = speed + rotation
-        vr = speed - rotation
-        if np.abs(vl) > 1 or np.abs(vr) > 1:
-            scale = np.abs(np.max((np.abs(vl), np.abs(vr))))
-            vl /= scale
-            vr /= scale
-        self.setPercentVelocity(vl, vr)
-
-    def setVelocity(self, vl: float, vr: float) -> None:
+    def setWheelVelocity(self, vl: float, vr: float) -> None:
         self.mode = self._Mode.Velocity
         if np.abs(vl) > self.MAX_VELOCITY or np.abs(vr) > self.MAX_VELOCITY:
             scale = self.MAX_VELOCITY / np.max((np.abs(vl), np.abs(vr)))
@@ -86,10 +64,25 @@ class Chassis:
         self.vl = int(vl * self.ENCODER_TICKS_PER_METER) / 10
         self.vr = int(vr * self.ENCODER_TICKS_PER_METER) / 10
 
-    def setPercentVelocity(self, vl: float, vr: float) -> None:
+    def setPercentWheelVelocity(self, vl: float, vr: float) -> None:
         self.mode = self._Mode.Velocity
         self.vl = int(vl * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_METER / 10)
         self.vr = int(vr * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_METER / 10)
+
+    def setChassisVelocity(self, v: float, omega: float) -> None:
+        self.mode = self._Mode.Velocity
+        vl = v + omega * self.X_WHEELBASE / 2.0
+        vr = v - omega * self.X_WHEELBASE / 2.0
+        self.setWheelVelocity(vl, vr)
+
+    def setChassisTwist(self, twist: Twist) -> None:
+        self.mode = self._Mode.Velocity
+        self.setChassisVelocity(twist.x, twist.omega)
+
+    def setState(self, x, y, heading):
+        self.state.x = x
+        self.state.y = y
+        self.state.heading = heading
 
     def updateState(self, dt: float) -> None:
         self._current_encoder_pos = (
@@ -99,6 +92,7 @@ class Chassis:
         self._delta_encoder_pos = self._current_encoder_pos - self._last_encoder_pos
 
         self.state.heading = np.deg2rad(self.imu.getYawPitchRoll()[0])
+
         self.state.x += (
             np.cos(self.state.heading)
             * self._delta_encoder_pos
@@ -112,16 +106,6 @@ class Chassis:
         self.state.update(self.last_state, dt)
         self._last_encoder_pos = self._current_encoder_pos
         self.last_state = copy(self.state)
-
-    def getWheelVelocities(self, v: float, omega: float) -> np.array:
-        scale = 1
-        # if np.abs(v) > self.MAX_VELOCITY:
-        #     scale = self.MAX_VELOCITY / v
-        v *= scale
-        omega *= scale
-        left = v + omega * self.X_WHEELBASE / 2.0
-        right = v - omega * self.X_WHEELBASE / 2.0
-        return np.array([left, right])
 
     def reset(self) -> None:
         self.vl = 0
