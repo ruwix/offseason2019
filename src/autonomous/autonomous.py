@@ -26,6 +26,8 @@ class Autonomous(AutonomousStateMachine):
     @state(first=True)
     def initMode(self, initial_call):
         side, mode = AutoSide.LEFT, AutoMode.ROCKET  # self.autoselector.getSelection()
+        if side == AutoSide.LEFT:
+            self.chassis.setState(1.70, -1.09, 0)
         if mode == 0:
             self.next_state("crossLine")
         elif side == AutoSide.LEFT and mode == AutoMode.ROCKET:
@@ -42,17 +44,16 @@ class Autonomous(AutonomousStateMachine):
             state_d = self.trajectory.getState()
             twist = self.ramsete.update(state, state_d)
             print(
-                f"{np.round(self.timer.getMsClock()/1000,5)}: {self.ramsete.getError()}"
+                f"{round(self.timer.getMsClock()/1000,3)}\t{round(self.ramsete.getError(),3)}"
             )
-            wheels = self.chassis.getWheelVelocities(twist.v, twist.omega)
-            self.chassis.setVelocity(wheels[0], wheels[1])
+            self.chassis.setChassisTwist(twist)
             return True
         else:
             return False
 
     @timed_state(duration=2, next_state="stop")
     def crossLine(self, initial_call):
-        self.chassis.setVelocity(36, 36)
+        self.chassis.setChassisVelocity(36, 0)
 
     @state
     def leftStartToRocket(self, initial_call):
@@ -100,7 +101,7 @@ class Autonomous(AutonomousStateMachine):
     def loadingStationBackup(self, initial_call):
         if initial_call:
             self.trajectory = Trajectory(
-                Path.LOADING_STATION_BACKUP.getPoses(), 0.5, reversed=True
+                Path.LOADING_STATION_BACKUP.getPoses(), 3, reversed=True
             )
             self.trajectory.build()
             self.trajectory.writeCSV("logs/output.csv")
@@ -126,4 +127,4 @@ class Autonomous(AutonomousStateMachine):
 
     @state
     def stop(self):
-        self.chassis.setOutput(0, 0)
+        self.chassis.setWheelOutput(0, 0)
