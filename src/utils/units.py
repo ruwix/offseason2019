@@ -11,3 +11,9 @@ meters_per_foot = 0.3048
 
 radians_per_degree = np.pi / 180
 degrees_per_radian = 180 / np.pi
+
+pounds_per_kilogram = 2.20462
+kilograms_per_pound = 0.453592
+
+grams_per_kilogram = 1000
+kilograms_per_gram = 0.001
