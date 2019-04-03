@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def boundHalfRadians(theta):
+def boundRadians(theta):
     while theta >= np.pi:
         theta -= 2 * np.pi
     while theta < -np.pi:
@@ -116,8 +116,8 @@ class Pose:
         if abs(self.theta - other.theta) > 0.001:
             return False
         diff = other - self
-        angle = boundHalfRadians(np.arctan2(diff.y, diff.x))
-        theta = boundHalfRadians(self.theta)
+        angle = boundRadians(np.arctan2(diff.y, diff.x))
+        theta = boundRadians(self.theta)
         return abs(angle - theta) < 0.001 or abs(angle - theta + np.pi) < 0.001
 
     def applyTwist(self, twist, dt):
@@ -300,7 +300,12 @@ class RobotState:
         dx = self.x - last_state.x
         dy = self.y - last_state.y
         dheading = self.heading - last_state.heading
-        self.v = np.hypot(dx, dy) / dt
+        direction = (
+            1
+            if np.sign(np.arctan2(dy, dx)) == np.sign(boundRadians(self.heading))
+            else -1
+        )
+        self.v = direction * np.hypot(dx, dy) / dt
         self.omega = dheading / dt
 
     def __eq__(self, other):

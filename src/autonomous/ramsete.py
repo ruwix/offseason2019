@@ -1,5 +1,5 @@
 import numpy as np
-from utils.geometry import RobotState, Twist, boundHalfRadians
+from utils.geometry import RobotState, Twist, boundRadians
 
 
 class Ramsete:
@@ -11,7 +11,7 @@ class Ramsete:
     def update(self, state: RobotState, state_d: RobotState) -> Twist:
         # Compute errors
         self.error = state_d - state
-        self.error.heading = boundHalfRadians(self.error.heading)
+        self.error.heading = boundRadians(self.error.heading)
         # Compute trig functions
         cos_theta = np.cos(state.heading)
         sin_theta = np.sin(state.heading)
