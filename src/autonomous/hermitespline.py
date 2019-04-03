@@ -4,46 +4,45 @@ from abc import ABC, abstractmethod
 
 
 class HermiteSpline:
-    def __init__(self, poses: np.array):
-        self.poses = poses
-        self.length = len(self.poses) - 1
+    def __init__(self, start: Pose, end: Pose):
+        self.start = start
+        self.end = end
 
     @abstractmethod
     def getPoint(self, t: float) -> Vector:
-        """Interpolate a point along the spline where 0 <= t <= self.length."""
+        """Interpolate a point along the spline."""
         return Vector(0, 0)
 
     @abstractmethod
     def getD(self, t: float) -> Vector:
         return Vector(0, 0)
-        """Interpolate the derivative along the spline where 0 <= t <= self.length."""
+        """Interpolate the derivative along the spline."""
 
     @abstractmethod
     def getDD(self, t: float) -> Vector:
         return Vector(0, 0)
-        """Interpolate the 2nd derivative along the spline where 0 <= t <= self.length."""
+        """Interpolate the 2nd derivative along the spline."""
 
     @abstractmethod
     def getDDD(self, t: float) -> Vector:
-        """Interpolate the 3rd derivative along the spline where 0 <= t <= self.length."""
+        """Interpolate the 3rd derivative along the spline."""
         return Vector(0, 0)
 
     @abstractmethod
     def getCurvature(self, t: float) -> float:
-        """Interpolate the curvature along the spline where 0 <= t <= self.length."""
+        """Interpolate the curvature along the spline."""
         return Vector(0, 0)
 
     def getRadius(self, t: float) -> float:
-        """Interpolate the curvature along the spline where 0 <= t <= self.length."""
+        """Interpolate the radius along the spline."""
         c = self.getCurvature(t)
         if c == 0:
-            return float("inf")
+            return np.Inf
         else:
             return 1 / self.getCurvature(t)
 
     def getDCurvature(self, t: float) -> float:
-        """Interpolate the derivative of the curvature along the spline where 0 <= t <= self.length."""
-        assert 0 <= t <= self.length
+        """Interpolate the derivative of the curvature along the spline."""
         d = self.getD(t)
         dd = self.getDD(t)
         ddd = self.getDDD(t)
@@ -60,28 +59,28 @@ class HermiteSpline:
         return sum_dc2
 
     def getHeading(self, t: float) -> float:
-        """Interpolate the angle of the tangent along the spline where 0 <= t <= self.length."""
+        """Interpolate the angle of the tangent along the spline."""
         d = self.getD(t)
         return np.arctan2(d.y, d.x)
 
     def getPose(self, t: float) -> Pose:
-        """Interpolate the pose on the spline where 0 <= t <= self.length."""
+        """Interpolate a pose along the spline."""
         point = self.getPoint(t)
         heading = self.getHeading(t)
         return Pose(point.x, point.y, heading)
 
     def getLinearVelocity(self, t: float) -> float:
-        """Interpolate the linear velocity of a particle traveling along the spline where 0 <= t <= self.length."""
+        """Interpolate the linear velocity of a particle traveling along the spline."""
         d = self.getD(t)
         return d.getMagnitude()
 
     def getAngularVelocity(self, t: float) -> float:
-        """Interpolate the angular velocity of a particle traveling along the spline where 0 <= t <= self.length."""
+        """Interpolate the angular velocity of a particle traveling along the spline."""
         omega = self.getLinearVelocity(t) * self.getCurvature(t)
         return omega
 
     def getTwist(self, t: float) -> Twist:
-        """Interpolate the twist of a particle traveling along the spline at timestamp t where 0 <= t <= self.length."""
+        """Interpolate the twist of a particle traveling along the spline."""
         x = self.getLinearVelocity(t)
         omega = self.getAngularVelocity(t)
         return Twist(x, 0, omega)
@@ -100,5 +99,4 @@ class HermiteSpline:
 
     @abstractmethod
     def computeCoefficients(self) -> None:
-        """Compute the coefficients of the spline. This must be called in order to make interpolations."""
         pass

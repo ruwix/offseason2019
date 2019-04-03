@@ -1,11 +1,12 @@
 import numpy as np
 from csv import reader, writer
 from autonomous.quintichermitespline import QuinticHermiteSpline
+
 from autonomous.cubichermitespline import CubicHermiteSpline
 
 from pyfrc.sim import get_user_renderer
 
-from utils.geometry import RobotState, boundHalfRadians
+from utils.geometry import RobotState, boundRadians
 from utils import units
 
 
@@ -16,26 +17,25 @@ class Trajectory:
         if reversed:
             for i in range(0, len(poses)):
                 poses[i].theta += np.pi
-        # self.path = CubicHermiteSpline(poses)
-        self.path = QuinticHermiteSpline(poses)
-        QuinticHermiteSpline.optimizeSpline(self.path)
+        self.splines = np.empty(len(poses) - 1, dtype=QuinticHermiteSpline)
+        for i in range(0, len(poses) - 1):
+            self.splines[i] = QuinticHermiteSpline(poses[i], poses[i + 1])
         self.states = np.empty(0)
         self.time = time
         self.reversed = reversed
         self.sample_size = sample_size
         self.timestamp = 0
 
-    def getAverageVelocity(self) -> float:
-        return self.path.getArcLength() / self.time
-
-    def update(self, t: float) -> None:
-        self.timestamp = t
-        self.t = self.timestamp / (self.time / self.path.length)
+    def update(self, timestamp: float) -> None:
+        self.timestamp = timestamp
+        t = self.timestamp / (self.time / len(self.splines))
+        self.index = int(t)
+        self.t = t - self.index
 
     def getState(self) -> RobotState:
         if not self.isFinished():
-            pose = self.path.getPose(self.t)
-            twist = self.path.getTwist(self.t)
+            pose = self.splines[self.index].getPose(self.t)
+            twist = self.splines[self.index].getTwist(self.t)
             twist /= self.time
             if self.reversed:
                 pose.theta += np.pi
@@ -45,15 +45,16 @@ class Trajectory:
             return None
 
     def build(self) -> None:
-        for i in range(0, int(self.path.length / self.sample_size)):
-            pose = self.path.getPose(i * self.sample_size)
-            twist = self.path.getTwist(i * self.sample_size)
-            twist /= self.time
-            if self.reversed:
-                pose.theta += np.pi
-                twist *= -1
-            state = RobotState(pose.x, pose.y, pose.theta, twist.x, twist.omega)
-            self.states = np.append(self.states, state)
+        for spline in self.splines:
+            for t in range(0, int(1 / self.sample_size)):
+                pose = spline.getPose(t * self.sample_size)
+                twist = spline.getTwist(t * self.sample_size)
+                twist /= self.time
+                if self.reversed:
+                    pose.theta += np.pi
+                    twist *= -1
+                state = RobotState(pose.x, pose.y, pose.theta, twist.x, twist.omega)
+                self.states = np.append(self.states, state)
 
     def isFinished(self) -> float:
         return self.timestamp >= self.time

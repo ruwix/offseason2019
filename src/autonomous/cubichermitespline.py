@@ -4,66 +4,32 @@ from autonomous.hermitespline import HermiteSpline
 
 
 class CubicHermiteSpline(HermiteSpline):
-    def __init__(self, poses: np.array):
-        super().__init__(poses)
-        self.dx0 = np.empty(self.length)
-        self.dx1 = np.empty(self.length)
-        self.ax = np.empty(self.length)
-        self.bx = np.empty(self.length)
-        self.cx = np.empty(self.length)
-        self.dx = np.empty(self.length)
-        self.dy0 = np.empty(self.length)
-        self.dy1 = np.empty(self.length)
-        self.ay = np.empty(self.length)
-        self.by = np.empty(self.length)
-        self.cy = np.empty(self.length)
-        self.dy = np.empty(self.length)
+    def __init__(self, start: Pose, end: Pose):
+        super().__init__(start, end)
         self.computeCoefficients()
 
     def getPoint(self, t: float) -> Vector:
-        """Interpolate a point along the spline where 0 <= t <= self.length."""
-        assert 0 <= t <= self.length
-        index = int(np.floor(t))
-        t -= index
-        x = (
-            (self.ax[index] * t ** 3)
-            + (self.bx[index] * t ** 2)
-            + (self.cx[index] * t)
-            + (self.dx[index])
-        )
-        y = (
-            (self.ay[index] * t ** 3)
-            + (self.by[index] * t ** 2)
-            + (self.cy[index] * t)
-            + (self.dy[index])
-        )
+        """Interpolate a point along the spline."""
+        x = (self.ax * t ** 3) + (self.bx * t ** 2) + (self.cx * t) + (self.dx)
+        y = (self.ay * t ** 3) + (self.by * t ** 2) + (self.cy * t) + (self.dy)
         return Vector(x, y)
 
     def getD(self, t: float) -> Vector:
-        """Interpolate the derivative along the spline where 0 <= t <= self.length."""
-        assert 0 <= t <= self.length
-        index = int(np.floor(t))
-        t -= index
-        dx = (3 * self.ax[index] * t ** 2) + (2 * self.bx[index] * t) + (self.cx[index])
-        dy = (3 * self.ay[index] * t ** 2) + (2 * self.by[index] * t) + (self.cy[index])
+        """Interpolate the derivative along the spline."""
+        dx = (3 * self.ax * t ** 2) + (2 * self.bx * t) + (self.cx)
+        dy = (3 * self.ay * t ** 2) + (2 * self.by * t) + (self.cy)
         return Vector(dx, dy)
 
     def getDD(self, t: float) -> Vector:
-        """Interpolate the 2nd derivative along the spline where 0 <= t <= self.length."""
-        assert 0 <= t <= self.length
-        index = int(np.floor(t))
-        t -= index
-        ddx = (6 * self.ax[index] * t) + (2 * self.bx[index])
-        ddy = (6 * self.ay[index] * t) + (2 * self.by[index])
+        """Interpolate the 2nd derivative along the spline."""
+        ddx = (6 * self.ax * t) + (2 * self.bx)
+        ddy = (6 * self.ay * t) + (2 * self.by)
         return Vector(ddx, ddy)
 
     def getDDD(self, t: float) -> Vector:
-        """Interpolate the 3rd derivative along the spline where 0 <= t <= self.length."""
-        assert 0 <= t <= self.length
-        index = int(np.floor(t))
-        t -= index
-        dddx = 6 * self.ax[index]
-        dddy = 6 * self.ay[index]
+        """Interpolate the 3rd derivative along the spline."""
+        dddx = 6 * self.ax
+        dddy = 6 * self.ay
         return Vector(dddx, dddy)
 
     def optimizeSpline(self):
@@ -71,40 +37,16 @@ class CubicHermiteSpline(HermiteSpline):
 
     def computeCoefficients(self) -> None:
         """Compute the coefficients of the spline. This must be called in order to make interpolations."""
-        for i in range(0, self.length):
-            scale = 2 * np.hypot(
-                self.poses[i + 1].x - self.poses[i].x,
-                self.poses[i + 1].y - self.poses[i].y,
-            )
-            self.dx0[i] = scale * np.cos(self.poses[i].theta)
-            self.dx1[i] = scale * np.cos(self.poses[i + 1].theta)
-            self.ax[i] = (
-                self.dx0[i]
-                + self.dx1[i]
-                + 2 * self.poses[i].x
-                - 2 * self.poses[i + 1].x
-            )
-            self.bx[i] = (
-                -2 * self.dx0[i]
-                - self.dx1[i]
-                - 3 * self.poses[i].x
-                + 3 * self.poses[i + 1].x
-            )
-            self.cx[i] = self.dx0[i]
-            self.dx[i] = self.poses[i].x
-            self.dy0[i] = scale * np.sin(self.poses[i].theta)
-            self.dy1[i] = scale * np.sin(self.poses[i + 1].theta)
-            self.ay[i] = (
-                self.dy0[i]
-                + self.dy1[i]
-                + 2 * self.poses[i].y
-                - 2 * self.poses[i + 1].y
-            )
-            self.by[i] = (
-                -2 * self.dy0[i]
-                - self.dy1[i]
-                - 3 * self.poses[i].y
-                + 3 * self.poses[i + 1].y
-            )
-            self.cy[i] = self.dy0[i]
-            self.dy[i] = self.poses[i].y
+        scale = 2 * np.hypot(self.end.x - self.start.x, self.end.y - self.start.y)
+        self.dx0 = scale * np.cos(self.start.theta)
+        self.dx1 = scale * np.cos(self.end.theta)
+        self.ax = self.dx0 + self.dx1 + 2 * self.start.x - 2 * self.end.x
+        self.bx = -2 * self.dx0 - self.dx1 - 3 * self.start.x + 3 * self.end.x
+        self.cx = self.dx0
+        self.dx = self.start.x
+        self.dy0 = scale * np.sin(self.start.theta)
+        self.dy1 = scale * np.sin(self.end.theta)
+        self.ay = self.dy0 + self.dy1 + 2 * self.start.y - 2 * self.end.y
+        self.by = -2 * self.dy0 - self.dy1 - 3 * self.start.y + 3 * self.end.y
+        self.cy = self.dy0
+        self.dy = self.start.y
