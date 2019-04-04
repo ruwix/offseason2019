@@ -4,7 +4,8 @@ import ctre
 import numpy as np
 from networktables import NetworkTables
 from enum import Enum
-from utils.geometry import RobotState, Twist
+from utils.geometry import RobotState
+from utils.physicalstates import ChassisState
 from copy import copy
 from utils import units
 
@@ -75,9 +76,9 @@ class Chassis:
         vr = v - omega * self.X_WHEELBASE / 2.0
         self.setWheelVelocity(vl, vr)
 
-    def setChassisTwist(self, twist: Twist) -> None:
+    def setChassisState(self, velocity: ChassisState) -> None:
         self.mode = self._Mode.Velocity
-        self.setChassisVelocity(twist.x, twist.omega)
+        self.setChassisVelocity(velocity.linear, velocity.angular)
 
     def setState(self, x, y, heading):
         self.state.x = x

@@ -1,5 +1,5 @@
 import numpy as np
-from utils.geometry import Vector, Pose, Twist, RobotState
+from utils.geometry import Vector, Pose, RobotState
 from autonomous.hermitespline import HermiteSpline
 
 

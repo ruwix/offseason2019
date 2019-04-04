@@ -1,5 +1,6 @@
 import numpy as np
-from utils.geometry import RobotState, Twist, boundRadians
+from utils.geometry import RobotState, boundRadians
+from utils.physicalstates import ChassisState
 
 
 class Ramsete:
@@ -8,7 +9,7 @@ class Ramsete:
         self.kzeta = kzeta  # 0 < kzeta < 1; larger kbeta provides more damping
         self.error = RobotState()
 
-    def update(self, state: RobotState, state_d: RobotState) -> Twist:
+    def update(self, state: RobotState, state_d: RobotState) -> ChassisState:
         # Compute errors
         self.error = state_d - state
         self.error.heading = boundRadians(self.error.heading)
@@ -32,7 +33,7 @@ class Ramsete:
             * (self.error.y * cos_theta - self.error.x * sin_theta)
             + k3 * self.error.heading
         )
-        return Twist(v, 0, omega)
+        return ChassisState(v, omega)
 
     def getError(self):
         return self.error
