@@ -7,6 +7,7 @@ from enum import Enum
 from utils.geometry import RobotState, Twist
 from copy import copy
 from utils import units
+from utils.pidf import PIDF
 
 
 class Chassis:
@@ -14,8 +15,8 @@ class Chassis:
     drive_motor_right: ctre.WPI_TalonSRX
     imu: ctre.PigeonIMU
 
-    X_WHEELBASE: float = 24 * units.meters_per_inch
-    Y_WHEELBASE: float = 24 * units.meters_per_inch
+    TRACK_WIDTH: float = 24 * units.meters_per_inch
+    WHEELBASE: float = 24 * units.meters_per_inch
 
     WHEEL_DIAMETER: float = 6 * units.meters_per_inch
     WHEEL_CIRCUMFERENCE: float = np.pi * WHEEL_DIAMETER
@@ -26,6 +27,11 @@ class Chassis:
     ENCODER_TICKS_PER_METER: float = ENCODER_CPR * ENCODER_GEAR_REDUCTION / WHEEL_CIRCUMFERENCE
     MAX_VELOCITY: float = 3
 
+    VELOCITY_KP = 0
+    VELOCITY_KI = 0
+    VELOCITY_KD = 0
+    VELOCITY_KF = 2.0
+
     class _Mode(Enum):
         PercentOutput = 0
         Velocity = 1
@@ -33,11 +39,21 @@ class Chassis:
 
     def __init__(self):
         self.timer = wpilib.Timer()
+        self.left_pidf = PIDF(
+            self.VELOCITY_KP, self.VELOCITY_KI, self.VELOCITY_KD, self.VELOCITY_KF
+        )
+        self.right_pidf = PIDF(
+            self.VELOCITY_KP, self.VELOCITY_KI, self.VELOCITY_KD, self.VELOCITY_KF
+        )
+
+        self.l_signal = 0
+        self.r_signal = 0
+        self.mode = self._Mode.PercentOutput
 
         self.vl = 0
         self.vr = 0
-        self.mode = self._Mode.PercentOutput
-
+        self._last_pl = 0
+        self._last_pr = 0
         self.timestamp = 0
         self._last_timestamp = 0
 
@@ -50,30 +66,25 @@ class Chassis:
         NetworkTables.initialize()
         self.table = NetworkTables.getTable("Ariadne")
 
-    def setWheelOutput(self, vl: float, vr: float) -> None:
+    def setWheelOutput(self, l_signal: float, r_signal: float) -> None:
         self.mode = self._Mode.PercentOutput
-        self.vl = vl
-        self.vr = vr
+        self.l_signal = l_signal
+        self.r_signal = r_signal
 
-    def setWheelVelocity(self, vl: float, vr: float) -> None:
+    def setWheelVelocity(self, l_signal: float, r_signal: float) -> None:
         self.mode = self._Mode.Velocity
-        if np.abs(vl) > self.MAX_VELOCITY or np.abs(vr) > self.MAX_VELOCITY:
-            scale = self.MAX_VELOCITY / np.max((np.abs(vl), np.abs(vr)))
-            vl *= scale
-            vr *= scale
-        self.vl = int(vl * self.ENCODER_TICKS_PER_METER) / 10
-        self.vr = int(vr * self.ENCODER_TICKS_PER_METER) / 10
-
-    def setPercentWheelVelocity(self, vl: float, vr: float) -> None:
-        self.mode = self._Mode.Velocity
-        self.vl = int(vl * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_METER / 10)
-        self.vr = int(vr * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_METER / 10)
+        # if np.abs(vl) > self.MAX_VELOCITY or np.abs(vr) > self.MAX_VELOCITY:
+        #     scale = self.MAX_VELOCITY / np.max((np.abs(vl), np.abs(vr)))
+        #     vl *= scale
+        #     vr *= scale
+        self.l_signal = l_signal
+        self.r_signal = r_signal
 
     def setChassisVelocity(self, v: float, omega: float) -> None:
         self.mode = self._Mode.Velocity
-        vl = v + omega * self.X_WHEELBASE / 2.0
-        vr = v - omega * self.X_WHEELBASE / 2.0
-        self.setWheelVelocity(vl, vr)
+        l_signal = v + omega * self.TRACK_WIDTH / 2.0
+        r_signal = v - omega * self.TRACK_WIDTH / 2.0
+        self.setWheelVelocity(l_signal, r_signal)
 
     def setChassisTwist(self, twist: Twist) -> None:
         self.mode = self._Mode.Velocity
@@ -108,8 +119,8 @@ class Chassis:
         self.last_state = copy(self.state)
 
     def reset(self) -> None:
-        self.vl = 0
-        self.vr = 0
+        self.l_signal = 0
+        self.r_signal = 0
         self.timestamp = 0
         self._last_timestamp = 0
         self.state = RobotState(0, 0, 0, 0, 0)
@@ -132,18 +143,32 @@ class Chassis:
         self.table.putNumberArray(
             "Pose", np.array([self.state.x, self.state.y, self.state.heading])
         )
+        pl = self.drive_motor_left.getSelectedSensorPosition(0)
+        pr = self.drive_motor_right.getSelectedSensorPosition(0)
 
+        self.vl = (pl - self._last_pl) / dt / self.ENCODER_TICKS_PER_METER
+        self.vr = (pr - self._last_pr) / dt / self.ENCODER_TICKS_PER_METER
         if self.mode == self._Mode.PercentOutput:
             self.drive_motor_left.set(
-                ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vl
+                ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.l_signal
             )
             self.drive_motor_right.set(
-                ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vr
+                ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.r_signal
             )
         elif self.mode == self._Mode.Velocity:
-            self.drive_motor_left.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vl)
-            self.drive_motor_right.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vr)
-        elif self.mode == self._Mode.PercentVelocity:
-            self.drive_motor_left.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vl)
-            self.drive_motor_right.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vr)
+            l_output = self.left_pidf.update(self.l_signal, self.vl, dt)
+            r_output = self.right_pidf.update(self.r_signal, self.vr, dt)
+            # print(f"{round(l_output,3)}\t{round(r_output,3)}")
+            n=12
+            l_output = np.clip(l_output, -n, n)
+            r_output = np.clip(r_output, -n, n)
+            print(f"{self.l_signal}\t{self.vl}")
+            self.drive_motor_left.set(
+                ctre.WPI_TalonSRX.ControlMode.PercentOutput, l_output/n
+            )
+            self.drive_motor_right.set(
+                ctre.WPI_TalonSRX.ControlMode.PercentOutput, r_output/n
+            )
         self._last_timestamp = self.timestamp
+        self._last_pl = pl
+        self._last_pr = pr

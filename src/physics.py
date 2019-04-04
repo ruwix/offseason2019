@@ -5,17 +5,20 @@ from ctre import ControlMode
 from utils import units
 from utils.geometry import Vector
 from utils.geometry import Vector
+from utils.realdifferentialdrive import RealDifferentialDrive
+from utils.realdcmotor import RealDCMotor
+
 
 class DriveTrain:
     """A simplified drivetrain for robot simulation."""
 
-    def __init__(self, x_wheelbase: float):
-        self.x_wheelbase = x_wheelbase
+    def __init__(self, track_width: float):
+        self.track_width = track_width
 
     def getVelocities(self, vl: float, vr: float) -> np.array:
         """Get the linear/angular velocity of the robot given the wheel velocities."""
         v = (vl + vr) / 2
-        omega = (vl - vr) / self.x_wheelbase
+        omega = (vl - vr) / self.track_width
         return np.array([v, omega])
 
 
@@ -58,12 +61,20 @@ class PhysicsController:
 
 class SimulatedDriveTalonSRX:
     """A simplified TalonSRX for simulation."""
+
     def __init__(self, id: int, max_velocity: float, ticks_per_meter: int):
         self.id = id
         self.max_velocity = max_velocity
         self.ticks_per_meter = ticks_per_meter
         self.quad_pos = 0
         self.quad_vel = 0
+
+    def getVoltage(self, hal_data: dict):
+        talon = hal_data["CAN"][self.id]
+        if talon["control_mode"] == ControlMode.PercentOutput:
+            return talon["value"] * 12
+        else:
+            return 0
 
     def getVelocity(self, hal_data: dict) -> float:
         """Get the current velocity of the talon in m/s."""
@@ -85,8 +96,18 @@ class SimulatedDriveTalonSRX:
 
 class PhysicsEngine:
     def __init__(self, controller):
+        self.motor = RealDCMotor(12.0, 2.42, 133.0, 2.7, 5310.0)
+        self.gearbox = RealDCMotor.gearbox(self.motor, 2)
+        self.drive = RealDifferentialDrive(
+            gearbox=self.gearbox,
+            gear_ratio=5,
+            track_width=Chassis.TRACK_WIDTH / 2,
+            wheel_radius=Chassis.WHEEL_DIAMETER / 2,
+            mass=50,
+            moi=10,
+        )
         self.controller = PhysicsController(controller)
-        self.drivetrain = DriveTrain(Chassis.X_WHEELBASE)
+        self.drivetrain = DriveTrain(Chassis.TRACK_WIDTH / 2)
         self.drive_left = SimulatedDriveTalonSRX(
             1, Chassis.MAX_VELOCITY, Chassis.ENCODER_TICKS_PER_METER
         )
@@ -108,11 +129,9 @@ class PhysicsEngine:
 
         self.drive_left.update(hal_data, dt)
         self.drive_right.update(hal_data, dt)
-
-        vl = self.drive_left.getVelocity(hal_data)
-        vr = self.drive_right.getVelocity(hal_data)
-
-        v, omega = self.drivetrain.getVelocities(vl, vr)
-
+        vl = self.drive_left.getVoltage(hal_data)
+        vr = self.drive_right.getVoltage(hal_data)
+        self.drive.update(vl, vr, dt)
+        v, omega = self.drivetrain.getVelocities(self.drive.vl, self.drive.vr)
         self.controller.drive(v, omega, dt)
         self.last_pose = self.pose

@@ -13,7 +13,7 @@ import numpy as np
 class Robot(magicbot.MagicRobot):
     chassis: Chassis
     autoselector: AutoSelector
-    VELOCITY_KP = 0.0
+    VELOCITY_KP = 1.0
     VELOCITY_KI = 0.0
     VELOCITY_KD = 0.0
     VELOCITY_KF = 0.0
@@ -63,7 +63,9 @@ class Robot(magicbot.MagicRobot):
             if np.abs(right) < np.abs(left) and 1 < np.abs(left):
                 left /= np.abs(left)
                 right /= np.abs(left)
-            self.chassis.setPercentWheelVelocity(left, right)
+            # self.chassis.setWheelOutput(left, right)
+            self.chassis.setWheelVelocity(left, right)
+
         except:
             self.onException()
 
