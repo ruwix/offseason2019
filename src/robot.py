@@ -64,6 +64,7 @@ class Robot(magicbot.MagicRobot):
                 left /= np.abs(left)
                 right /= np.abs(left)
             self.chassis.setPercentWheelVelocity(left, right)
+            print(round(self.chassis.state, 3))
         except:
             self.onException()
 

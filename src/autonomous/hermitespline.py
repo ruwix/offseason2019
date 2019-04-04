@@ -1,5 +1,6 @@
 import numpy as np
-from utils.geometry import Vector, Pose, Twist, RobotState
+from utils.geometry import Vector, Pose, RobotState, boundRadians
+from utils.physicalstates import ChassisState
 from abc import ABC, abstractmethod
 
 
@@ -31,7 +32,10 @@ class HermiteSpline:
     @abstractmethod
     def getCurvature(self, t: float) -> float:
         """Interpolate the curvature along the spline."""
-        return Vector(0, 0)
+        d = self.getD(t)
+        dd = self.getDD(t)
+        dx2dy2 = d.x ** 2 + d.y ** 2
+        return (d.x * dd.y - d.y * dd.x) / (dx2dy2 ** 1.5)
 
     def getRadius(self, t: float) -> float:
         """Interpolate the radius along the spline."""
@@ -79,15 +83,33 @@ class HermiteSpline:
         omega = self.getLinearVelocity(t) * self.getCurvature(t)
         return omega
 
-    def getTwist(self, t: float) -> Twist:
-        """Interpolate the twist of a particle traveling along the spline."""
-        x = self.getLinearVelocity(t)
+    def getVelocities(self, t: float) -> ChassisState:
+        """Interpolate the velocities of a particle traveling along the spline."""
+        v = self.getLinearVelocity(t)
         omega = self.getAngularVelocity(t)
-        return Twist(x, 0, omega)
+        return ChassisState(v, omega)
+
+    def getLinearAcceleration(self, t: float) -> float:
+        """Interpolate the linear acceleration of a particle traveling along the spline."""
+        d = self.getD(t)
+        dd = self.getDD(t)
+        direction = np.sign(d.x * dd.x + d.y * dd.y)
+        return direction * dd.getMagnitude()
+
+    def getAngularAcceleration(self, t: float) -> float:
+        """Interpolate the angular acceleration of a particle traveling along the spline."""
+        alpha = self.getLinearAcceleration(t) * self.getCurvature(t)
+        return alpha
+
+    def getAcceleration(self, t: float) -> ChassisState:
+        """Interpolate the acceleration of a particle traveling along the spline."""
+        a = self.getLinearAcceleration(t)
+        alpha = self.getAngularAcceleration(t)
+        return ChassisState(a, alpha)
 
     def getArcLength(self, dt: float = 0.01) -> float:
         arc_length = 0
-        for i in range(0, self.length * int(1 / dt) - 1):
+        for i in range(0, int(1 / dt)):
             p0 = self.getPoint(i * dt)
             p1 = self.getPoint((i + 1) * dt)
             arc_length += p0.getDistance(p1)

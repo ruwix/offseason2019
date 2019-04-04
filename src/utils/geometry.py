@@ -1,4 +1,5 @@
 import numpy as np
+from utils.physicalstates import ChassisState
 
 
 def boundRadians(theta):
@@ -274,12 +275,16 @@ class RobotState:
         heading: float = 0,
         v: float = 0,
         omega: float = 0,
+        a: float = 0,
+        alpha: float = 0,
     ):
         self.x = x
         self.y = y
         self.heading = heading
         self.v = v
         self.omega = omega
+        self.a = a
+        self.alpha = alpha
 
     def getPose(self):
         return Pose(self.x, self.y, self.heading)
@@ -289,24 +294,26 @@ class RobotState:
         self.y = pose.y
         self.heading = pose.theta
 
-    def getTwist(self):
-        return Twist(self.v, 0, self.omega)
+    def getVelocities(self):
+        return ChassisState(self.v, self.omega)
 
-    def setTwist(self, twist):
-        self.v = twist.x
-        self.om = twist.omega
+    def setVelocities(self, velocities):
+        return ChassisState(velocities.linear, velocities.angular)
 
     def update(self, last_state, dt: float) -> None:
-        dx = self.x - last_state.x
-        dy = self.y - last_state.y
-        dheading = self.heading - last_state.heading
+        dstate = self - last_state
         direction = (
             1
-            if np.sign(np.arctan2(dy, dx)) == np.sign(boundRadians(self.heading))
+            if np.sign(np.arctan2(dstate.y, dstate.x))
+            == np.sign(boundRadians(dstate.heading))
             else -1
         )
-        self.v = direction * np.hypot(dx, dy) / dt
-        self.omega = dheading / dt
+        self.v = direction * np.hypot(dstate.x, dstate.y) / dt
+        self.omega = dstate.heading / dt
+        dstate = self - last_state
+        direction = np.sign(dstate.v)
+        self.a = dstate.v / dt
+        self.alpha = dstate.omega / dt
 
     def __eq__(self, other):
         return (
@@ -316,6 +323,8 @@ class RobotState:
             and (self.heading == other.heading)
             and (self.v == other.v)
             and (self.omega == other.omega)
+            and (self.a == other.a)
+            and (self.alpha == other.alpha)
         )
 
     def __add__(self, other):
@@ -325,7 +334,9 @@ class RobotState:
             heading = self.heading + other.heading
             v = self.v + other.v
             omega = self.omega + other.omega
-        return RobotState(x, y, heading, v, omega)
+            a = self.a + other.a
+            alpha = self.alpha + other.alpha
+        return RobotState(x, y, heading, v, omega, a, alpha)
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -343,7 +354,10 @@ class RobotState:
             heading = self.heading * other
             v = self.v * other
             omega = self.omega * other
-        return RobotState(x, y, heading, v, omega)
+            a = self.a * other.a
+            alpha = self.alpha * other.alpha
+
+        return RobotState(x, y, heading, v, omega, a, alpha)
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -355,13 +369,17 @@ class RobotState:
             heading = self.heading / other
             v = self.v / other
             omega = self.omega / other
-        return RobotState(x, y, heading, v, omega)
+            a = self.a / other.a
+            alpha = self.alpha / other.alpha
+        return RobotState(x, y, heading, v, omega, a, alpha)
 
     def __rtruediv__(self, other):
         return self.__truediv__(other)
 
     def __neg__(self):
-        return RobotState(-self.x, -self.y, -self.heading, -self.v, -self.omega)
+        return RobotState(
+            -self.x, -self.y, -self.heading, -self.v, -self.omega, -self.a, -self.alpha
+        )
 
     def __round__(self, ndigits=0):
         return RobotState(
@@ -370,7 +388,9 @@ class RobotState:
             round(self.heading, ndigits),
             round(self.v, ndigits),
             round(self.omega, ndigits),
+            round(self.a, ndigits),
+            round(self.alpha, ndigits),
         )
 
     def __str__(self):
-        return f"({self.x}, {self.y}, {self.heading}, {self.v}, {self.omega})"
+        return f"({self.x},\t{self.y},\t{self.heading},\t{self.v},\t{self.omega},\t{self.a},\t{self.alpha})"
