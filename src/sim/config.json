@@ -1,17 +1,17 @@
 {
   "pyfrc": {
     "robot": {
-      "w": 3.281,
-      "h": 3.281,
-      "starting_x": 5.58,
-      "starting_y": 9.97,
+      "w_m": 1,
+      "h_m": 1,
+      "starting_x_m": 1.7,
+      "starting_y_m": 1.16,
       "starting_angle": 0
     },
     "field": {
       "image": "field.png",
-      "w": 27,
-      "h": 27,
-      "px_per_ft": 20.29
+      "w_m": 8.23,
+      "h_m": 8.23,
+      "px_per_m": 6.18
     }
   }
 }

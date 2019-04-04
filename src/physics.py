@@ -5,6 +5,31 @@ from ctre import ControlMode
 from utils import units
 from utils.geometry import Vector
 from utils.geometry import Vector
+from pyfrc import config
+
+config.config_obj["pyfrc"]["robot"]["w"] = (
+    config.config_obj["pyfrc"]["robot"]["w_m"] * units.feet_per_meter
+)
+config.config_obj["pyfrc"]["robot"]["h"] = (
+    config.config_obj["pyfrc"]["robot"]["h_m"] * units.feet_per_meter
+)
+config.config_obj["pyfrc"]["robot"]["starting_x"] = (
+    config.config_obj["pyfrc"]["robot"]["starting_x_m"] * units.feet_per_meter
+)
+config.config_obj["pyfrc"]["robot"]["starting_y"] = (
+    config.config_obj["pyfrc"]["field"]["h_m"] / 2
+    - config.config_obj["pyfrc"]["robot"]["starting_y_m"]
+) * units.feet_per_meter
+config.config_obj["pyfrc"]["field"]["w"] = int(
+    config.config_obj["pyfrc"]["field"]["w_m"] * units.feet_per_meter
+)
+config.config_obj["pyfrc"]["field"]["h"] = int(
+    config.config_obj["pyfrc"]["field"]["h_m"] * units.feet_per_meter
+)
+config.config_obj["pyfrc"]["field"]["px_per_ft"] = (
+    config.config_obj["pyfrc"]["field"]["px_per_m"] * units.feet_per_meter
+)
+
 
 class DriveTrain:
     """A simplified drivetrain for robot simulation."""
@@ -58,6 +83,7 @@ class PhysicsController:
 
 class SimulatedDriveTalonSRX:
     """A simplified TalonSRX for simulation."""
+
     def __init__(self, id: int, max_velocity: float, ticks_per_meter: int):
         self.id = id
         self.max_velocity = max_velocity
@@ -85,6 +111,7 @@ class SimulatedDriveTalonSRX:
 
 class PhysicsEngine:
     def __init__(self, controller):
+
         self.controller = PhysicsController(controller)
         self.drivetrain = DriveTrain(Chassis.X_WHEELBASE)
         self.drive_left = SimulatedDriveTalonSRX(
