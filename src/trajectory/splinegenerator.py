@@ -16,21 +16,23 @@ def parameterizeSpline(spline, max_dx, max_dy, max_dtheta, t0=0, t1=1):
     ret = np.empty(0, dtype=Pose)
     ret = np.append(ret, spline.getPose(0))
     t = 0
+    i = 0
     while t < t1:
         next_time = t + dt
         ret = np.append(
             ret, getSegmentArc(spline, t, next_time, max_dx, max_dy, max_dtheta)
         )
         t = next_time
+        i += 1
     return ret
 
 
 def parameterizeSplines(splines, max_dx, max_dy, max_dtheta):
-    ret = np.empty(len(splines) * MIN_SAMPLE_SIZE + 1, dtype=Pose)
+    ret = np.empty(1, dtype=Pose)
     ret[0] = splines[0].getPose(0)
     for i, spline in enumerate(splines):
         samples = parameterizeSpline(spline, max_dx, max_dy, max_dtheta)
-        ret[int(i * MIN_SAMPLE_SIZE) : int((i + 1) * MIN_SAMPLE_SIZE + 1)] = samples
+        ret = np.append(ret, samples)
     return ret
 
 

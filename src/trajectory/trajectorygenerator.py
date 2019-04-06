@@ -1,15 +1,15 @@
 import numpy as np
-from autonomous.quintichermitespline import QuinticHermiteSpline
+from trajectory.quintichermitespline import QuinticHermiteSpline
 
-from autonomous.cubichermitespline import CubicHermiteSpline
+from trajectory.cubichermitespline import CubicHermiteSpline
 
 from pyfrc.sim import get_user_renderer
 
 from utils.geometry import RobotState, boundRadians, Vector, Pose
 from utils import units
 from wpilib import RobotBase
-from utils.splinegenerator import parameterizeSplines
-from utils.distancetrajectory import DistanceTrajectory
+from trajectory.splinegenerator import parameterizeSplines
+from trajectory.distancetrajectory import DistanceTrajectory
 
 
 class TrajectoryContraints:
@@ -34,6 +34,7 @@ class TrajectoryGenerator:
         splines = np.empty(len(spline_poses) - 1, dtype=QuinticHermiteSpline)
         for i in range(0, len(spline_poses) - 1):
             splines[i] = QuinticHermiteSpline(spline_poses[i], spline_poses[i + 1])
+
         return self.getDistanceTrajectory(splines)
 
     def getTrajectoryPosesFromSplines(self, splines):
@@ -41,7 +42,7 @@ class TrajectoryGenerator:
 
     def getDistanceTrajectory(self, splines):
         return DistanceTrajectory(self.getTrajectoryPosesFromSplines(splines))
-    
+
     # def update(self, timestamp: float) -> None:
     #     self.timestamp = timestamp
     #     t = self.timestamp / (self.time / len(self.splines))
@@ -126,16 +127,19 @@ class TrajectoryGenerator:
     #     writer_.writerows(data)
     #     output.close()
 
-    # def drawSimulation(self) -> None:
-    #     if RobotBase.isSimulation() and get_user_renderer() != None:
-    #         points = np.empty((0, 2))
-    #         for state in self.states:
-    #             point = np.array([state.x, state.y + 4.1148]).reshape((1, 2))
-    #             points = np.append(points, point, axis=0)
-    #         get_user_renderer().draw_line(
-    #             points,
-    #             scale=(units.feet_per_meter, units.feet_per_meter),
-    #             color="#FFFFFF",
-    #             width=2,
-    #         )
+    def drawSimulation(self, d_trajectory) -> None:
+        if RobotBase.isSimulation() and get_user_renderer() != None:
+            points = np.empty((0, 2))
+            t = 0
+            while t < d_trajectory.length:
+                pose = d_trajectory.getPose(t)
+                point = np.array([pose.x, pose.y + 4.1148]).reshape((1, 2))
+                points = np.append(points, point, axis=0)
+                t += 0.01
+            get_user_renderer().draw_line(
+                points,
+                scale=(units.feet_per_meter, units.feet_per_meter),
+                color="#FFFFFF",
+                width=2,
+            )
 

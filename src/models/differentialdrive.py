@@ -6,7 +6,7 @@ Who implemented from:
 NASA Ames Robotics "The Cheesy Poofs"
 Team 254
 """
-from utils.dcmotortransmission import DCMotorTransmission
+from models.dcmotortransmission import DCMotorTransmission
 from utils.epsilon import EPSILON, epsilonEquals
 
 import numpy as np

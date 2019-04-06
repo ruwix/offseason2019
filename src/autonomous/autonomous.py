@@ -4,8 +4,8 @@ import wpilib
 from components.chassis import Chassis
 from components.autoselector import AutoSelector, AutoSide, AutoMode
 
-from autonomous.ramsete import Ramsete
-from autonomous.trajectory import TrajectoryGenerator, TrajectoryContraints
+from controllers.ramsete import Ramsete
+from trajectory.trajectorygenerator import TrajectoryGenerator, TrajectoryContraints
 from autonomous.paths import Path
 import numpy as np
 
@@ -32,10 +32,7 @@ class Autonomous(AutonomousStateMachine):
             TrajectoryContraints(max_velocity=2.0),
             reversed=False,
         )
-        t = 0
-        while t < d.length:
-            print(round(d.getPose(t), 3))
-            t += 0.01
+        tg.drawSimulation(d)
         self.next_state_now("stop")
         # if side == AutoSide.LEFT:
         #     self.chassis.setState(1.70, -1.09, 0)

@@ -4,7 +4,7 @@ import wpilib
 import ctre
 from components.chassis import Chassis
 from components.autoselector import AutoSelector
-from autonomous.ramsete import Ramsete
+from controllers.ramsete import Ramsete
 from utils.lazytalonsrx import LazyTalonSRX
 import numpy as np
 
