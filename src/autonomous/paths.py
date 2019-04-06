@@ -1,5 +1,5 @@
 import numpy as np
-from csv import reader, writer
+from csv import reader
 from enum import Enum
 import paths
 import os

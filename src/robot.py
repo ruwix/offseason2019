@@ -4,7 +4,6 @@ import wpilib
 import ctre
 from components.chassis import Chassis
 from components.autoselector import AutoSelector
-from autonomous.trajectory import Trajectory
 from autonomous.ramsete import Ramsete
 from utils.lazytalonsrx import LazyTalonSRX
 import numpy as np
@@ -48,7 +47,6 @@ class Robot(magicbot.MagicRobot):
 
     def teleopInit(self):
         """Called when teleop starts; optional"""
-        pass
 
     def teleopPeriodic(self):
         """Called on each iteration of the control loop"""

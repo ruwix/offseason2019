@@ -15,7 +15,7 @@
     - `veloicty_right = 10.0`
 - Lower camel case for class methods and functions
     - `def setVelocity(self, velocity_left, velocity_right):`
-    - `def getOdometry(self):`
+    - `def boundRadians():`
 - Upper camel case for class names
     - `class Robot(magicbot.MagicRobot):`
     - `class DriveTrain:`

@@ -1,7 +1,7 @@
 import numpy as np
 from utils.geometry import Vector, Pose, RobotState, boundRadians
 from utils.physicalstates import ChassisState
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 
 class HermiteSpline:
