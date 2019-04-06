@@ -1,5 +1,7 @@
 import numpy as np
 from utils.physicalstates import ChassisState
+from utils.epsilon import EPSILON
+from utils.mathextension import lerp
 
 
 def boundRadians(theta):
@@ -36,9 +38,12 @@ class Vector:
     def getRotated(self, theta: float):
         """Get a vector that has been rotated about the origin by theta."""
         st, ct = np.sin(theta), np.cos(theta)
-        x = (self.x * ct) + (self.y * st)
+        x = (self.x * ct) - (self.y * st)
         y = -(self.x * st) + (self.y * ct)
         return Vector(x, y)
+
+    def lerp(self, other, t):
+        return Vector(lerp(self.x, other.x, t), lerp(self.y, other.y, t))
 
     def __eq__(self, other):
         return (
@@ -109,8 +114,7 @@ def fitParabola(p0: Vector, p1: Vector, p2: Vector) -> float:
 
 class Pose:
     def __init__(self, x: float = 0, y: float = 0, theta: float = 0):
-        self.x = x
-        self.y = y
+        self.point = Vector(x, y)
         self.theta = theta
 
     def isColinear(self, other):
@@ -122,18 +126,63 @@ class Pose:
         return abs(angle - theta) < 0.001 or abs(angle - theta + np.pi) < 0.001
 
     def applyTwist(self, twist, dt):
-        dsin = np.sin(twist.omega * dt) / twist.omega
-        dcos = (np.cos(twist.omega * dt) - 1.0) / twist.omega
+        dsin = np.sin(twist.dtheta * dt) / twist.dtheta
+        dcos = (np.cos(twist.dtheta * dt) - 1.0) / twist.dtheta
         sin = np.sin(self.theta)
         cos = np.cos(self.theta)
         dpose = Pose(
-            twist.x * dsin + twist.y * dcos,
-            twist.x * -dcos + twist.y * dsin,
-            twist.omega * dt,
+            twist.dx * dsin + twist.dy * dcos,
+            twist.dx * -dcos + twist.dy * dsin,
+            twist.dtheta * dt,
         )
         self.x += dpose.x * cos - dpose.y * sin
         self.y += dpose.x * sin - dpose.y * cos
         self.theta += dpose.theta
+
+    def getTwist(self):
+        dtheta = self.theta
+        half_dtheta = dtheta / 2
+        cos_minus_one = np.cos(self.theta) - 1.0
+        if abs(cos_minus_one) < EPSILON:
+            half_theta_by_tan_of_half_dtheta = 1 - 1 / 12 * dtheta ** 2
+        else:
+            half_theta_by_tan_of_half_dtheta = (
+                -(half_dtheta * np.sin(self.theta)) / cos_minus_one
+            )
+        translation_part = Vector(self.x, self.y).getRotated(
+            np.arctan2(-half_dtheta, half_theta_by_tan_of_half_dtheta)
+        )
+
+        return Twist(translation_part.x, translation_part.y, self.theta)
+
+    def lerp(self, other, t):
+        new_point = self.point.lerp(other.point)
+        return Pose(new_point.x, new_point.y, lerp(self.theta, other.theta))
+
+    def interpolate(self, end_value, t):
+        if t <= 0:
+            return self
+        elif t >= 1:
+            return end_value
+        else:
+            twist = (end_value - self).getTwist()
+            return self + (twist * t).asPose()
+
+    @property
+    def x(self):
+        return self.point.x
+
+    @property
+    def y(self):
+        return self.point.y
+
+    @x.setter
+    def x(self, value):
+        self.point.x = value
+
+    @y.setter
+    def y(self, value):
+        self.point.y = value
 
     def __eq__(self, other):
         return (
@@ -148,7 +197,7 @@ class Pose:
             x = self.x + other.x
             y = self.y + other.y
             theta = self.theta + other.theta
-        return Pose(x, y, theta)
+            return Pose(x, y, theta)
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -192,39 +241,57 @@ class Pose:
 
 
 class Twist:
-    def __init__(self, x: float = 0, y: float = 0, omega: float = 0):
-        self.x = x
-        self.y = y
-        self.omega = omega
+    def __init__(self, dx: float = 0, dy: float = 0, dtheta: float = 0):
+        self.dx = dx
+        self.dy = dy
+        self.dtheta = dtheta
 
     def applyTwist(self, twist, dt):
-        dsin = np.sin(twist.omega * dt) / twist.omega
-        dcos = (np.cos(twist.omega * dt) - 1.0) / twist.omega
-        sin = np.sin(self.omega)
-        cos = np.cos(self.omega)
+        dsin = np.sin(twist.dtheta * dt) / twist.dtheta
+        dcos = (np.cos(twist.dtheta * dt) - 1.0) / twist.dtheta
+        sin = np.sin(self.dtheta)
+        cos = np.cos(self.dtheta)
         dpose = Twist(
-            twist.x * dsin + twist.y * dcos,
-            twist.x * -dcos + twist.y * dsin,
-            twist.omega * dt,
+            twist.dx * dsin + twist.dy * dcos,
+            twist.dx * -dcos + twist.dy * dsin,
+            twist.dtheta * dt,
         )
-        self.x += dpose.x * cos - dpose.y * sin
-        self.y += dpose.x * sin - dpose.y * cos
-        self.omega += dpose.omega
+        self.dx += dpose.dx * cos - dpose.dy * sin
+        self.dy += dpose.dx * sin - dpose.dy * cos
+        self.dtheta += dpose.dtheta
+
+    def asPose(self):
+        sin_theta = np.sin(self.dtheta)
+        cos_theta = np.cos(self.dtheta)
+        if abs(self.dtheta < EPSILON):
+            s = 1 - 1 / 6 * self.dtheta ** 2
+            c = self.dtheta / 2
+        else:
+            s = sin_theta / self.dtheta
+            c = (1 - cos_theta) / self.dtheta
+        return Pose(self.dx * s - self.dy * c, self.dx * c + self.dy * s, self.dtheta)
+
+    def lerp(self, other, t):
+        return Pose(
+            lerp(self.dx, other.dx, t),
+            lerp(self.dy, other.dy, t),
+            lerp(self.dtheta, other.dtheta, t),
+        )
 
     def __eq__(self, other):
         return (
             isinstance(other, self.__class__)
-            and (self.x == other.x)
-            and (self.y == other.y)
-            and (self.omega == other.omega)
+            and (self.dx == other.dx)
+            and (self.dy == other.dy)
+            and (self.dtheta == other.dtheta)
         )
 
     def __add__(self, other):
         if isinstance(other, self.__class__):
-            x = self.x + other.x
-            y = self.y + other.y
-            omega = self.omega + other.omega
-        return Twist(x, y, omega)
+            dx = self.dx + other.dx
+            dy = self.dy + other.dy
+            dtheta = self.dtheta + other.dtheta
+        return Twist(dx, dy, dtheta)
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -237,34 +304,36 @@ class Twist:
 
     def __mul__(self, other):
         if isinstance(other, (int, float)):
-            x = self.x * other
-            y = self.y * other
-            omega = self.omega * other
-        return Twist(x, y, omega)
+            dx = self.dx * other
+            dy = self.dy * other
+            dtheta = self.dtheta * other
+        return Twist(dx, dy, dtheta)
 
     def __rmul__(self, other):
         return self.__mul__(other)
 
     def __truediv__(self, other):
         if isinstance(other, (int, float)):
-            x = self.x / other
-            y = self.y / other
-            omega = self.y / other
-        return Twist(x, y, omega)
+            dx = self.dx / other
+            dy = self.dy / other
+            dtheta = self.dy / other
+        return Twist(dx, dy, dtheta)
 
     def __rtruediv__(self, other):
         return self.__truediv__(other)
 
     def __neg__(self):
-        return Twist(-self.x, -self.y, -self.omega)
+        return Twist(-self.dx, -self.dy, -self.dtheta)
 
     def __round__(self, ndigits=0):
         return Twist(
-            round(self.x, ndigits), round(self.y, ndigits), round(self.omega, ndigits)
+            round(self.dx, ndigits),
+            round(self.dy, ndigits),
+            round(self.dtheta, ndigits),
         )
 
     def __str__(self):
-        return f"({self.x}, {self.y}, {self.omega})"
+        return f"({self.dx}, {self.dy}, {self.dtheta})"
 
 
 class RobotState:
@@ -278,27 +347,65 @@ class RobotState:
         a: float = 0,
         alpha: float = 0,
     ):
-        self.x = x
-        self.y = y
-        self.heading = heading
-        self.v = v
-        self.omega = omega
-        self.a = a
-        self.alpha = alpha
+        self.pose = Pose(x, y, heading)
+        self.velocity = ChassisState(v, omega)
+        self.acceleration = ChassisState(a, alpha)
 
-    def getPose(self):
-        return Pose(self.x, self.y, self.heading)
+    @property
+    def x(self):
+        return self.pose.x
 
-    def setPose(self, pose):
-        self.x = pose.x
-        self.y = pose.y
-        self.heading = pose.theta
+    @property
+    def y(self):
+        return self.pose.y
 
-    def getVelocities(self):
-        return ChassisState(self.v, self.omega)
+    @property
+    def heading(self):
+        return self.pose.theta
 
-    def setVelocities(self, velocities):
-        return ChassisState(velocities.linear, velocities.angular)
+    @property
+    def v(self):
+        return self.velocity.linear
+
+    @property
+    def omega(self):
+        return self.velocity.angular
+
+    @property
+    def a(self):
+        return self.acceleration.linear
+
+    @property
+    def alpha(self):
+        return self.acceleration.angular
+
+    @x.setter
+    def x(self, value):
+        self.pose.x = value
+
+    @y.setter
+    def y(self, value):
+        self.pose.y = value
+
+    @heading.setter
+    def heading(self, value):
+        self.pose.theta = value
+
+    @v.setter
+    def v(self, value):
+        self.velocity.linear = value
+
+    @omega.setter
+    def omega(self, value):
+        self.velocity.angular = value
+
+    @a.setter
+    def a(self, value):
+        self.acceleration.linear = value
+
+    @alpha.setter
+    def alpha(self, value):
+        self.acceleration.angular = value
 
     def update(self, last_state, dt: float) -> None:
         dstate = self - last_state
