@@ -117,6 +117,9 @@ class Pose:
         self.point = Vector(x, y)
         self.theta = theta
 
+    def getDistance(self, other):
+        return self.point.getDistance(other.point)
+
     def isColinear(self, other):
         if abs(self.theta - other.theta) > 0.001:
             return False
@@ -238,6 +241,124 @@ class Pose:
 
     def __str__(self):
         return f"({self.x}, {self.y}, {self.theta})"
+
+
+class PoseWithCurvature:
+    def __init__(
+        self,
+        x: float = 0,
+        y: float = 0,
+        theta: float = 0,
+        curvature: float = 0,
+        dkds: float = 0,
+    ):
+        self.pose = Pose(x, y, theta)
+        self.curvature = curvature
+        self.dkds = dkds
+
+    def getDistance(self, other):
+        return self.pose.getDistance(other.pose)
+
+    def interpolate(self, other, t):
+        if t <= 0:
+            return self
+        elif t >= 1:
+            return other
+        else:
+
+            interpolated_pose = self.pose.interpolate(other.pose, t)
+            return PoseWithCurvature(
+                interpolated_pose.x,
+                interpolated_pose.y,
+                interpolated_pose.theta,
+                lerp(self.curvature, other.curvature, t),
+                lerp(self.dkds, other.dkds, t),
+            )
+
+    @property
+    def x(self):
+        return self.pose.x
+
+    @property
+    def y(self):
+        return self.pose.y
+
+    @property
+    def theta(self):
+        return self.pose.theta
+
+    @x.setter
+    def x(self, value):
+        self.pose.x = value
+
+    @y.setter
+    def y(self, value):
+        self.pose.y = y
+
+    @theta.setter
+    def theta(self, value):
+        self.pose.theta = value
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, self.__class__)
+            and (self.pose == other.pose)
+            and (self.curvature == other.curvature)
+            and (self.dkds == other.dkds)
+        )
+
+    def __add__(self, other):
+        if isinstance(other, self.__class__):
+            pose = self.pose + other.pose
+            curvature = self.curvature + other.curvature
+            dkds = self.dkds + other.dkds
+            return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return self.__sub__(other)
+
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            pose = self.pose / other
+            curvature = self.curvature * other
+            dkds = self.dkds * other
+        return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __truediv__(self, other):
+        if isinstance(other, (int, float)):
+            pose = self.pose / other
+            curvature = self.curvature / other
+            dkds = self.dkds / other
+        return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
+
+    def __rtruediv__(self, other):
+        return self.__truediv__(other)
+
+    def __neg__(self):
+        return PoseWithCurvature(
+            -self.x, -self.y, -self.theta, -self.curvature, -self.dkds
+        )
+
+    def __round__(self, ndigits=0):
+        return PoseWithCurvature(
+            round(self.x, ndigits),
+            round(self.y, ndigits),
+            round(self.theta, ndigits),
+            round(self.curvature, ndigits),
+            round(self.dkds, ndigits),
+        )
+
+    def __str__(self):
+        return f"({self.x}, {self.y}, {self.theta}, {self.curvature}, {self.dkds})"
 
 
 class Twist:

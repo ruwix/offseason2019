@@ -1,5 +1,5 @@
 import numpy as np
-from utils.geometry import Vector, Pose, RobotState, boundRadians
+from utils.geometry import Vector, Pose, RobotState, boundRadians, PoseWithCurvature
 from utils.physicalstates import ChassisState
 from abc import abstractmethod
 
@@ -72,6 +72,13 @@ class HermiteSpline:
         point = self.getPoint(t)
         heading = self.getHeading(t)
         return Pose(point.x, point.y, heading)
+
+    def getPoseWithCurvature(self, t: float) -> PoseWithCurvature:
+        """Interpolate a pose with a curvature along the spline."""
+        pose = self.getPose(t)
+        curvature = self.getCurvature(t)
+        dkds = self.getDCurvature(t) / self.getLinearVelocity(t)
+        return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
 
     def getLinearVelocity(self, t: float) -> float:
         """Interpolate the linear velocity of a particle traveling along the spline."""

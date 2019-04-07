@@ -10,13 +10,13 @@ class DistanceTrajectory:
         for i in range(len(poses) - 1):
             p0 = poses[i]
             p1 = poses[i + 1]
-            self.distances[i] = self.distances[i - 1] + p0.point.getDistance(p1.point)
+            self.distances[i] = self.distances[i - 1] + p0.getDistance(p1)
         self.length = self.distances[-1]
 
-    def getPose(self, distance):
+    def getPoseWithCurvature(self, distance):
         if distance <= 0:
             return self.poses[0]
-        elif distance >= self.distances[-1]:
+        elif distance >= self.length:
             return self.poses[-1]
         else:
             index = np.argmax(self.distances > distance)
