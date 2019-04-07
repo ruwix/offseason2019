@@ -18,7 +18,7 @@ config.config_obj["pyfrc"]["robot"]["starting_x"] = (
 )
 config.config_obj["pyfrc"]["robot"]["starting_y"] = (
     config.config_obj["pyfrc"]["field"]["h_m"] / 2
-    - config.config_obj["pyfrc"]["robot"]["starting_y_m"]
+    + config.config_obj["pyfrc"]["robot"]["starting_y_m"]
 ) * units.feet_per_meter
 config.config_obj["pyfrc"]["field"]["w"] = int(
     config.config_obj["pyfrc"]["field"]["w_m"] * units.feet_per_meter
