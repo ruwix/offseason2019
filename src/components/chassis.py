@@ -42,7 +42,7 @@ class Chassis:
         self.timestamp = 0
         self._last_timestamp = 0
 
-        self.state = RobotState(0, 0, 0, 0, 0)
+        self.state = RobotState(1.7, -1.09, 0, 0, 0)
         self.last_state = self.state
 
         self._current_encoder_pos = 0
