@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def lerp(a, b, t):
+def lerp(a: float, b: float, t: float) -> float:
     return a + (b - a) * np.clip(t, 0, 1)
 
 
@@ -10,5 +10,5 @@ class MinMax:
         self.min = _min
         self.max = _max
 
-    def isValid(self):
+    def isValid(self) -> None:
         return self.min <= self.max

@@ -6,7 +6,7 @@ from networktables import NetworkTables
 from enum import Enum
 from utils.geometry import RobotState
 from utils.physicalstates import ChassisState
-from copy import copy
+from copy import deepcopy
 from utils import units
 
 
@@ -106,7 +106,7 @@ class Chassis:
         )
         self.state.update(self.last_state, dt)
         self._last_encoder_pos = self._current_encoder_pos
-        self.last_state = copy(self.state)
+        self.last_state = deepcopy(self.state)
 
     def reset(self) -> None:
         self.vl = 0

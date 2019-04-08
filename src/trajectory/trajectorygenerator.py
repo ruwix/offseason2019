@@ -15,7 +15,10 @@ from trajectory.timedtrajectory import TimedState, TimedTrajectory
 
 class TrajectoryGenerator:
     def __init__(
-        self, max_dx=0.05, max_dy=0.00635, max_dtheta=5 * units.degrees_per_radian
+        self,
+        max_dx: float = 0.05,
+        max_dy: float = 0.00635,
+        max_dtheta: float = 5 * units.degrees_per_radian,
     ):
         self.max_dx = max_dx
         self.max_dy = max_dy
@@ -25,12 +28,12 @@ class TrajectoryGenerator:
         self,
         spline_poses: np.array,
         constraints: np.array,
-        start_velocity,
-        end_velocity,
-        max_velocity,
-        max_acceleration,
-        _reversed=False,
-    ):
+        start_velocity: float,
+        end_velocity: float,
+        max_velocity: float,
+        max_acceleration: float,
+        _reversed: bool = False,
+    ) -> TimedTrajectory:
         # Make theta normal for trajectory generation if path is trajectoryReversed.
         if _reversed:
             for i in range(0, len(spline_poses)):
@@ -51,24 +54,24 @@ class TrajectoryGenerator:
         )
         return t
 
-    def getTrajectoryPosesFromSplines(self, splines):
+    def getTrajectoryPosesFromSplines(self, splines: np.array) -> np.array:
         return parameterizeSplines(splines, self.max_dx, self.max_dy, self.max_dtheta)
 
-    def getDistanceTrajectory(self, splines):
+    def getDistanceTrajectory(self, splines: np.array) -> DistanceTrajectory:
         t = self.getTrajectoryPosesFromSplines(splines)
         return DistanceTrajectory(t)
 
     def timeParameterizeTrajectory(
         self,
-        d_trajectory,
+        d_trajectory: DistanceTrajectory,
         constraints: np.array,
-        start_velocity,
-        end_velocity,
-        max_velocity,
-        max_acceleration,
-        step_size,
-        _reversed,
-    ):
+        start_velocity: float,
+        end_velocity: float,
+        max_velocity: float,
+        max_acceleration: float,
+        step_size: float,
+        _reversed: bool,
+    ) -> np.array:
         class ConstrainedState:
             def __init__(
                 self,
@@ -124,13 +127,11 @@ class TrajectoryGenerator:
         # acceleration that is admissible at both the start and end state, as well as an admissible end velocity. If
         # there is no admissible end velocity or acceleration, we set the end velocity to the state's maximum allowed
         # velocity and will repair the acceleration during the backward pass (by slowing down the predecessor).
-
         predecessor = ConstrainedState(
             states[0], 0, start_velocity, -max_acceleration, max_acceleration
         )
         for i in range(len(states)):
             # Add the new state.
-
             constrained_states[i] = ConstrainedState()
             constrained_state = constrained_states[i]
             constrained_state.state = states[i]
@@ -138,7 +139,6 @@ class TrajectoryGenerator:
             constrained_state.distance = ds + predecessor.distance
             # We may need to iterate to find the maximum end velocity and common acceleration, since acceleration
             # limits may be a function of velocity.
-
             while True:
                 # Enforce global max velocity and max reachable velocity by global acceleration limit.
                 # vf = sqrt(vi^2 + 2*a*d)
@@ -159,8 +159,7 @@ class TrajectoryGenerator:
                 constrained_state.max_acceleration = max_acceleration
 
                 # At this point, the state is full constructed, but no constraints have been applied aside from
-                # predecessor
-                # state max accel.
+                # predecessorstate max accel.
 
                 # Enforce all velocity constraints.
                 for constraint in constraints:
@@ -303,7 +302,7 @@ class TrajectoryGenerator:
             )
         return TimedTrajectory(timed_states)
 
-    def drawSimulation(self, timed_trajectory) -> None:
+    def drawSimulation(self, timed_trajectory: TimedTrajectory) -> None:
         if RobotBase.isSimulation() and get_user_renderer() != None:
             points = np.empty((0, 2))
             for timed_state in timed_trajectory.timed_states:

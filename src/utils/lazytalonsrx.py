@@ -9,10 +9,16 @@ class LazyTalonSRX(ctre.WPI_TalonSRX):
     MotorDash = NetworkTables.getTable("SmartDashboard").getSubTable("TalonSRX")
     ControlMode = ctre.WPI_TalonSRX.ControlMode
 
-    def __init__(self, id):
+    def __init__(self, id: int):
         super().__init__(id)
 
-    def initialize(self, inverted=False, encoder=False, phase=False, name=None):
+    def initialize(
+        self,
+        inverted: bool = False,
+        encoder: bool = False,
+        phase: bool = False,
+        name: bool = None,
+    ) -> None:
         """Initialize the motors (enable the encoder, set invert status, set voltage limits)."""
         self.encoder = encoder
         if self.encoder:
@@ -26,7 +32,7 @@ class LazyTalonSRX(ctre.WPI_TalonSRX):
         self.no_encoder_warning = f"No encoder connected to {self.name}"
         self.no_closed_loop_warning = f"{self.name} not in closed loop mode"
 
-    def setPIDF(self, slot, kp, ki, kd, kf):
+    def setPIDF(self, slot: int, kp: float, ki: float, kd: float, kf: float) -> None:
         """Initialize the PIDF controller."""
         self.selectProfileSlot(slot, 0)
         self.config_kP(slot, kp, 0)
@@ -34,35 +40,35 @@ class LazyTalonSRX(ctre.WPI_TalonSRX):
         self.config_kD(slot, kd, 0)
         self.config_kF(slot, kf, 0)
 
-    def setMotionMagicConfig(self, vel, accel):
+    def setMotionMagicConfig(self, vel: float, accel: float) -> None:
         self.configMotionAcceleration(int(accel), 0)
         self.configMotionCruiseVelocity(int(vel), 0)
 
-    def setPercentOutput(self, signal, max_signal=1):
+    def setPercentOutput(self, signal: float, max_signal: float = 1) -> None:
         """Set the percent output of the motor."""
         signal = min(max(signal, -max_signal), max_signal)
         self.set(self.ControlMode.PercentOutput, signal)
 
-    def setPositionSetpoint(self, pos):
+    def setPositionSetpoint(self, pos: float) -> None:
         """Set the position of the motor."""
         self.set(self.ControlMode.Position, pos)
 
-    def setVelocitySetpoint(self, vel):
+    def setVelocitySetpoint(self, vel: float) -> None:
         """Set the velocity of the motor."""
         self.set(self.ControlMode.Velocity, vel)
 
-    def setMotionMagicSetpoint(self, pos):
+    def setMotionMagicSetpoint(self, pos: float) -> None:
         """Set the position of the motor using motion magic."""
         self.set(self.ControlMode.MotionMagic, pos)
 
-    def zero(self, pos=0):
+    def zero(self, pos: int = 0) -> None:
         """Zero the encoder if it exists."""
         if self.encoder:
             self.setSelectedSensorPosition(pos, 0, 0)
         else:
             logging.warning(self.no_encoder_warning)
 
-    def getPosition(self):
+    def getPosition(self) -> int:
         """Get the encoder position if it exists."""
         if self.encoder:
             return self.getSelectedSensorPosition(0)
@@ -70,7 +76,7 @@ class LazyTalonSRX(ctre.WPI_TalonSRX):
             logging.warning(self.no_encoder_warning)
             return 0
 
-    def getVelocity(self):
+    def getVelocity(self) -> int:
         """Get the encoder velocity if it exists."""
         if self.encoder:
             return self.getSelectedSensorVelocity(0)
@@ -78,7 +84,7 @@ class LazyTalonSRX(ctre.WPI_TalonSRX):
             logging.warning(self.no_encoder_warning)
             return 0
 
-    def getError(self):
+    def getError(self) -> int:
         """Get the closed loop error if in closed loop mode."""
         if self._isClosedLoop():
             return self.getClosedLoopError(0)
@@ -86,7 +92,7 @@ class LazyTalonSRX(ctre.WPI_TalonSRX):
             logging.warning(self.no_closed_loop_warning)
             return 0
 
-    def getTarget(self):
+    def getTarget(self) -> int:
         """Get the closed loop target if in closed loop mode."""
         if self._isClosedLoop():
             return self.getClosedLoopTarget(0)
@@ -94,7 +100,7 @@ class LazyTalonSRX(ctre.WPI_TalonSRX):
             logging.warning(self.no_closed_loop_warning)
             return 0
 
-    def outputToDashboard(self):
+    def outputToDashboard(self) -> None:
         pass
         # self.MotorDash.putNumber(
         #     f"{self.name} Percent Output", self.getMotorOutputPercent()
@@ -109,7 +115,7 @@ class LazyTalonSRX(ctre.WPI_TalonSRX):
         #             f"{self.name} PIDF Error", self.getClosedLoopError(0)
         #         )
 
-    def _isClosedLoop(self):
+    def _isClosedLoop(self) -> bool:
         return self.getControlMode() in (
             ctre.WPI_TalonSRX.ControlMode.Velocity,
             ctre.WPI_TalonSRX.ControlMode.Position,

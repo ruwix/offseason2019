@@ -11,7 +11,14 @@ def zipPairs(iterable):
     return zip(a, b)
 
 
-def parameterizeSpline(spline, max_dx, max_dy, max_dtheta, t0=0, t1=1):
+def parameterizeSpline(
+    spline,
+    max_dx: float,
+    max_dy: float,
+    max_dtheta: float,
+    t0: float = 0,
+    t1: float = 1,
+) -> np.array:
     dt = (t1 - t0) / MIN_SAMPLE_SIZE
     ret = np.empty(0, dtype=PoseWithCurvature)
     t = 0
@@ -26,7 +33,9 @@ def parameterizeSpline(spline, max_dx, max_dy, max_dtheta, t0=0, t1=1):
     return ret
 
 
-def parameterizeSplines(splines, max_dx, max_dy, max_dtheta):
+def parameterizeSplines(
+    splines: np.array, max_dx: float, max_dy: float, max_dtheta: float
+) -> np.array:
     ret = np.empty(1, dtype=PoseWithCurvature)
     ret[0] = splines[0].getPoseWithCurvature(0)
     for i, spline in enumerate(splines):
@@ -35,7 +44,14 @@ def parameterizeSplines(splines, max_dx, max_dy, max_dtheta):
     return ret
 
 
-def getSegmentArc(spline, t0, t1, max_dx, max_dy, max_dtheta):
+def getSegmentArc(
+    spline: np.array,
+    t0: float,
+    t1: float,
+    max_dx: float,
+    max_dy: float,
+    max_dtheta: float,
+) -> np.array:
     p0 = spline.getPoint(t0)
     p1 = spline.getPoint(t1)
     r0 = spline.getHeading(t0)

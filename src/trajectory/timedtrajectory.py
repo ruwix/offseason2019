@@ -15,9 +15,8 @@ class TimedState:
         self.velocity = velocity
         self.acceleration = acceleration
 
-    def interpolate(self, other, t):
+    def interpolate(self, other: TimedState, t: float) -> TimedState:
         if t <= self.EPSILON:
-            print(self)
             return self
         elif abs(t + self.EPSILON) >= 1:
             return other
@@ -48,14 +47,14 @@ class TimedState:
 
 
 class TimedTrajectory:
-    def __init__(self, timed_states):
+    def __init__(self, timed_states: float):
         self.timed_states = timed_states
         self.length = self.timed_states[-1].t
         self.times = np.empty(len(timed_states))
         for i in range(len(self.timed_states)):
             self.times[i] = self.timed_states[i].t
 
-    def getState(self, t):
+    def getState(self, t: float) -> TimedState:
         if t <= 0:
             return self.timed_states[0]
         elif t >= self.length:
