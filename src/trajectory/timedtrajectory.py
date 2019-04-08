@@ -15,7 +15,7 @@ class TimedState:
         self.velocity = velocity
         self.acceleration = acceleration
 
-    def interpolate(self, other: TimedState, t: float) -> TimedState:
+    def interpolate(self, other, t: float):
         if t <= self.EPSILON:
             return self
         elif abs(t + self.EPSILON) >= 1:
@@ -35,7 +35,7 @@ class TimedState:
         )
         return TimedState(
             self.state.interpolate(
-                other.state, new_s / self.state.getDistance(other.state)
+                other.state, new_s / self.state.distance(other.state)
             ),
             new_t,
             new_v,

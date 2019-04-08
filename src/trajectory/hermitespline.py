@@ -125,7 +125,7 @@ class HermiteSpline(ABC):
         for i in range(0, int(1 / dt)):
             p0 = self.getPoint(i * dt)
             p1 = self.getPoint((i + 1) * dt)
-            arc_length += p0.getDistance(p1)
+            arc_length += p0.distance(p1)
         return arc_length
 
     @abstractmethod

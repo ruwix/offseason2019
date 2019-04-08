@@ -19,7 +19,7 @@ class Vector:
         self.x = x
         self.y = y
 
-    def getDistance(self, other) -> float:
+    def distance(self, other) -> float:
         """Compute the distance between 2 vectors."""
         return (self - other).getMagnitude()
 
@@ -35,11 +35,11 @@ class Vector:
         """Get the normalized (unit) vector (a vector with the same argument but a magntitude of 1)."""
         return self / self.getMagnitude()
 
-    def getRotated(self, theta: float):
+    def rotateBy(self, theta: float):
         """Get a vector that has been rotated about the origin by theta."""
         st, ct = np.sin(theta), np.cos(theta)
         x = (self.x * ct) - (self.y * st)
-        y = -(self.x * st) + (self.y * ct)
+        y = (self.x * st) + (self.y * ct)
         return Vector(x, y)
 
     def lerp(self, other, t):
@@ -117,8 +117,8 @@ class Pose:
         self.point = Vector(x, y)
         self.theta = theta
 
-    def getDistance(self, other):
-        return self.point.getDistance(other.point)
+    def distance(self, other):
+        return self.point.distance(other.point)
 
     def isColinear(self, other):
         if abs(self.theta - other.theta) > 0.001:
@@ -146,29 +146,32 @@ class Pose:
         dtheta = self.theta
         half_dtheta = dtheta / 2
         cos_minus_one = np.cos(self.theta) - 1.0
+
         if abs(cos_minus_one) < EPSILON:
             half_theta_by_tan_of_half_dtheta = 1 - 1 / 12 * dtheta ** 2
         else:
             half_theta_by_tan_of_half_dtheta = (
                 -(half_dtheta * np.sin(self.theta)) / cos_minus_one
             )
-        translation_part = Vector(self.x, self.y).getRotated(
+        translation_part = Vector(self.x, self.y).rotateBy(
             np.arctan2(-half_dtheta, half_theta_by_tan_of_half_dtheta)
         )
-
         return Twist(translation_part.x, translation_part.y, self.theta)
 
-    def lerp(self, other, t):
-        new_point = self.point.lerp(other.point)
-        return Pose(new_point.x, new_point.y, lerp(self.theta, other.theta))
+    def transformBy(self, other):
+        new_point = self.point + other.point.rotateBy(self.theta)
+        return Pose(new_point.x, new_point.y, self.theta + other.theta)
 
-    def interpolate(self, end_value, t):
+    def inFrameOfReferenceOf(self, field_relative_origin):
+        return (-field_relative_origin) + self
+
+    def interpolate(self, other, t):
         if t <= 0:
             return self
         elif t >= 1:
-            return end_value
+            return other
         else:
-            twist = (end_value - self).getTwist()
+            twist = (other - self).getTwist()
             return self + (twist * t).asPose()
 
     @property
@@ -197,10 +200,7 @@ class Pose:
 
     def __add__(self, other):
         if isinstance(other, self.__class__):
-            x = self.x + other.x
-            y = self.y + other.y
-            theta = self.theta + other.theta
-            return Pose(x, y, theta)
+            return self.transformBy(other)
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -232,7 +232,8 @@ class Pose:
         return self.__truediv__(other)
 
     def __neg__(self):
-        return Pose(-self.x, -self.y, -self.theta)
+        new_point = (-self.point).rotateBy(-self.theta)
+        return Pose(new_point.x, new_point.y, -self.theta)
 
     def __round__(self, ndigits=0):
         return Pose(
@@ -256,8 +257,8 @@ class PoseWithCurvature:
         self.curvature = curvature
         self.dkds = dkds
 
-    def getDistance(self, other):
-        return self.pose.getDistance(other.pose)
+    def distance(self, other):
+        return self.pose.distance(other.pose)
 
     def interpolate(self, other, t):
         if t <= 0:
@@ -265,7 +266,6 @@ class PoseWithCurvature:
         elif t >= 1:
             return other
         else:
-
             interpolated_pose = self.pose.interpolate(other.pose, t)
             return PoseWithCurvature(
                 interpolated_pose.x,

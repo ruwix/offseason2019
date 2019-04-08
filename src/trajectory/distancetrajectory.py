@@ -1,6 +1,6 @@
 from utils.epsilon import epsilonEquals
 import numpy as np
-from utils.geometry import PoseWithCurvtuare
+from utils.geometry import PoseWithCurvature
 
 
 class DistanceTrajectory:
@@ -11,10 +11,10 @@ class DistanceTrajectory:
         for i in range(len(poses) - 1):
             p0 = poses[i]
             p1 = poses[i + 1]
-            self.distances[i] = self.distances[i - 1] + p0.getDistance(p1)
+            self.distances[i] = self.distances[i - 1] + p0.distance(p1)
         self.length = self.distances[-1]
 
-    def getPoseWithCurvature(self, distance: float) -> PoseWithCurvtuare:
+    def getPoseWithCurvature(self, distance: float) -> PoseWithCurvature:
         if distance <= 0:
             return self.poses[0]
         elif distance >= self.length:

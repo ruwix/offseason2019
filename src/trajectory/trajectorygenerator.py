@@ -135,7 +135,7 @@ class TrajectoryGenerator:
             constrained_states[i] = ConstrainedState()
             constrained_state = constrained_states[i]
             constrained_state.state = states[i]
-            ds = constrained_state.state.getDistance(predecessor.state)
+            ds = constrained_state.state.distance(predecessor.state)
             constrained_state.distance = ds + predecessor.distance
             # We may need to iterate to find the maximum end velocity and common acceleration, since acceleration
             # limits may be a function of velocity.

@@ -1,3 +1,6 @@
+from utils.geometry import Vector
+
+
 class QuadraticSpline:
     def __init__(self, p1: Vector, p2: Vector, p3: Vector):
         self.p1 = p1
