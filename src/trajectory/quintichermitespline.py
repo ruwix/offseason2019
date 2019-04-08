@@ -1,12 +1,15 @@
 import numpy as np
 from utils.geometry import Vector, Pose, RobotState
 from trajectory.hermitespline import HermiteSpline
+from trajectory.quadraticspline import QuadraticSpline
+from copy import copy
 
 
 class QuinticHermiteSpline(HermiteSpline):
     MAX_ITERATIONS = 100
     EPSILON = 1e-5
     MIN_DELTA = 1e-3
+    STEP_SIZE = 1
 
     def __init__(self, start: Pose, end: Pose):
         super().__init__(start, end)
@@ -73,47 +76,154 @@ class QuinticHermiteSpline(HermiteSpline):
         return Vector(dddx, dddy)
 
     @staticmethod
-    def optimizeSpline(spline):
-        pass
-        # if spline.length <= 1:
-        #     return
-        # prev = spline.getSumDCurvature2()
-        # for _ in range(0, QuinticHermiteSpline.MAX_ITERATIONS):
-        #     QuinticHermiteSpline.optimizationIteration(spline)
-        #     current = spline.getSumDCurvature2()
-        #     if (prev - current) < QuinticHermiteSpline.MIN_DELTA:
-        #         return current
-        #     prev = current
-        # return prev
+    def optimizeSpline(splines: np.array) -> float:
+        prev = HermiteSpline.getSumDCurvatures2(splines)
+        for i in range(0, QuinticHermiteSpline.MAX_ITERATIONS):
+            QuinticHermiteSpline.optimizationIteration(splines)
+            current = HermiteSpline.getSumDCurvatures2(splines)
+            if (prev - current) < QuinticHermiteSpline.MIN_DELTA:
+                return current
+            prev = current
+        for s in splines:
+            for i in range(1000):
+                print(s.getPose(i / 1000))
+        return prev
 
     @staticmethod
-    def optimizationIteration(spline):
-        pass
-        # if spline.length <= 1:
-        #     return
-        # control_points = np.empty(spline.length, dtype=Vector)
-        # temp = copy(spline)
-        # original_sum = spline.getSumDCurvature2()
-        # magnitude = 0
-        # for i in range(0, spline.length - 1):
-        #     control_points = Vector()
-        #     temp.ddx1 += QuinticHermiteSpline.EPSILON
-        #     temp.ddx0 += QuinticHermiteSpline.EPSILON
-        #     temp.computeCoefficients()
-        #     ddx = (
-        #         temp.getSumDCurvature2() - original_sum
-        #     ) / QuinticHermiteSpline.EPSILON
-        #     temp = copy(spline)
-        #     temp.ddy1 += QuinticHermiteSpline.EPSILON
-        #     temp.ddy0 += QuinticHermiteSpline.EPSILON
-        #     temp.computeCoefficients()
-        #     ddy = (
-        #         temp.getSumDCurvature2() - original_sum
-        #     ) / QuinticHermiteSpline.EPSILON
-        #     control_points = Vector(ddx, ddy)
-        #     temp = copy(spline)
-        #     magnitude += control_points.x ** 2 + control_points.y ** 2
-        # magnitude = np.sqrt(magnitude)
+    def optimizationIteration(splines: np.array):
+        if len(splines) <= 1:
+            return
+        control_points = np.empty(len(splines) - 1, dtype=Vector)
+        for i in range(len(control_points)):
+            control_points[i] = Vector()
+        magnitude = 0
+        for i in range(0, len(splines) - 1):
+            if splines[i].start.isColinear(splines[i + 1].start) or splines[
+                i
+            ].end.isColinear(splines[i + 1].end):
+                continue
+            original = HermiteSpline.getSumDCurvatures2(splines)
+            temp = copy(splines[i])
+            temp1 = copy(splines[i + 1])
+            splines[i].start.x = temp.start.x
+            splines[i].end.x = temp.end.x
+            splines[i].dx0 = temp.dx0
+            splines[i].dx1 = temp.dx1
+            splines[i].ddx0 = temp.ddx0
+            splines[i].ddx1 = temp.ddx1 + QuinticHermiteSpline.EPSILON
+            splines[i].start.y = temp.start.y
+            splines[i].end.y = temp.end.y
+            splines[i].dy0 = temp.dy0
+            splines[i].dy1 = temp.dy1
+            splines[i].ddy0 = temp.ddy0
+            splines[i].ddy1 = temp.ddy1
+            splines[i + 1].start.x = temp1.start.x
+            splines[i + 1].end.x = temp1.end.x
+            splines[i + 1].dx0 = temp1.dx0
+            splines[i + 1].dx1 = temp1.dx1
+            splines[i + 1].ddx0 = temp1.ddx0 + QuinticHermiteSpline.EPSILON
+            splines[i + 1].ddx1 = temp1.ddx1
+            splines[i + 1].start.y = temp1.start.y
+            splines[i + 1].end.y = temp1.end.y
+            splines[i + 1].dy0 = temp1.dy0
+            splines[i + 1].dy1 = temp1.dy1
+            splines[i + 1].ddy0 = temp1.ddy0
+            splines[i + 1].ddy1 = temp1.ddy1
+            control_points[i].x = (
+                HermiteSpline.getSumDCurvatures2(splines) - original
+            ) / QuinticHermiteSpline.EPSILON
+            splines[i].start.x = temp.start.x
+            splines[i].end.x = temp.end.x
+            splines[i].dx0 = temp.dx0
+            splines[i].dx1 = temp.dx1
+            splines[i].ddx0 = temp.ddx0
+            splines[i].ddx1 = temp.ddx1 + QuinticHermiteSpline.EPSILON
+            splines[i].start.y = temp.start.y
+            splines[i].end.y = temp.end.y
+            splines[i].dy0 = temp.dy0
+            splines[i].dy1 = temp.dy1
+            splines[i].ddy0 = temp.ddy0
+            splines[i].ddy1 = temp.ddy1 + QuinticHermiteSpline.EPSILON
+            splines[i + 1].start.x = temp1.start.x
+            splines[i + 1].end.x = temp1.end.x
+            splines[i + 1].dx0 = temp1.dx0
+            splines[i + 1].dx1 = temp1.dx1
+            splines[i + 1].ddx0 = temp1.ddx0
+            splines[i + 1].ddx1 = temp1.ddx1
+            splines[i + 1].start.y = temp1.start.y
+            splines[i + 1].end.y = temp1.end.y
+            splines[i + 1].dy0 = temp1.dy0
+            splines[i + 1].dy1 = temp1.dy1
+            splines[i + 1].ddy0 = temp1.ddy0 + QuinticHermiteSpline.EPSILON
+            splines[i + 1].ddy1 = temp1.ddy1
+            control_points[i].y = (
+                HermiteSpline.getSumDCurvatures2(splines) - original
+            ) / QuinticHermiteSpline.EPSILON
+
+            splines[i] = copy(temp)
+            splines[i + 1] = copy(temp1)
+            magnitude += (
+                control_points[i].x * control_points[i].x
+                + control_points[i].y * control_points[i].y
+            )
+
+        magnitude = np.sqrt(magnitude)
+
+        p2 = Vector(0.0, HermiteSpline.getSumDCurvatures2(splines))
+
+        for i in range(len(splines) - 1):
+            if splines[i].start.isColinear(splines[i + 1].start) or splines[
+                i
+            ].end.isColinear(splines[i + 1].end):
+                continue
+            control_points[i].x *= QuinticHermiteSpline.STEP_SIZE / magnitude
+            control_points[i].y *= QuinticHermiteSpline.STEP_SIZE / magnitude
+
+            splines[i].ddx1 -= control_points[i].x
+            splines[i].ddy1 -= control_points[i].y
+            splines[i + 1].ddx0 -= control_points[i].x
+            splines[i + 1].ddy0 -= control_points[i].y
+
+            splines[i].computeCoefficients()
+            splines[i + 1].computeCoefficients()
+
+        p1 = Vector(
+            -QuinticHermiteSpline.STEP_SIZE, HermiteSpline.getSumDCurvatures2(splines)
+        )
+
+        for i in range(len(splines) - 1):
+            if splines[i].start.isColinear(splines[i + 1].start) or splines[
+                i
+            ].end.isColinear(splines[i + 1].end):
+                continue
+
+            splines[i].ddx1 += 2 * control_points[i].x
+            splines[i].ddy1 += 2 * control_points[i].y
+            splines[i + 1].ddx0 += 2 * control_points[i].x
+            splines[i + 1].ddy0 += 2 * control_points[i].y
+
+            splines[i].computeCoefficients()
+            splines[i + 1].computeCoefficients()
+
+        p3 = Vector(
+            QuinticHermiteSpline.STEP_SIZE, HermiteSpline.getSumDCurvatures2(splines)
+        )
+        step_size = QuadraticSpline(p1, p2, p3).getVertexXCoordinate()
+        for i in range(len(splines) - 1):
+            if splines[i].start.isColinear(splines[i + 1].start) or splines[
+                i
+            ].end.isColinear(splines[i + 1].end):
+                continue
+            control_points[i].x *= 1 + step_size / QuinticHermiteSpline.STEP_SIZE
+            control_points[i].y *= 1 + step_size / QuinticHermiteSpline.STEP_SIZE
+
+            splines[i].ddx1 += control_points[i].x
+            splines[i].ddy1 += control_points[i].y
+            splines[i + 1].ddx0 += control_points[i].x
+            splines[i + 1].ddy0 += control_points[i].y
+
+            splines[i].computeCoefficients()
+            splines[i + 1].computeCoefficients()
 
     def computeCoefficients(self) -> None:
         """Compute the coefficients of the spline. This must be called in order to make interpolations."""
