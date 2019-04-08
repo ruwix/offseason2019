@@ -5,6 +5,8 @@ from utils.mathextension import lerp
 
 
 class TimedState:
+    EPSILON = 1e-6
+
     def __init__(
         self, state: PoseWithCurvature, t: float, velocity: float, acceleration: float
     ):
@@ -14,9 +16,10 @@ class TimedState:
         self.acceleration = acceleration
 
     def interpolate(self, other, t):
-        if t <= 0:
+        if t <= self.EPSILON:
+            print(self)
             return self
-        elif t >= 1:
+        elif abs(t + self.EPSILON) >= 1:
             return other
         new_t = lerp(self.t, other.t, t)
         delta_t = new_t - self.t

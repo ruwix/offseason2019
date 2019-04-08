@@ -13,10 +13,7 @@ import numpy as np
 from utils.physicalstates import WheelState, ChassisState, DriveDynamics
 
 
-class MinMax:
-    def __init__(self, min, max):
-        self.min = min
-        self.max = max
+from utils.mathextension import MinMax
 
 
 class DifferentialDrive:

@@ -13,11 +13,6 @@ from trajectory.distancetrajectory import DistanceTrajectory
 from trajectory.timedtrajectory import TimedState, TimedTrajectory
 
 
-class TrajectoryContraints:
-    def __init__(self, max_velocity: float):
-        self.max_velocity = max_velocity
-
-
 class TrajectoryGenerator:
     def __init__(
         self, max_dx=0.05, max_dy=0.00635, max_dtheta=5 * units.degrees_per_radian
@@ -29,7 +24,7 @@ class TrajectoryGenerator:
     def generateTrajectory(
         self,
         spline_poses: np.array,
-        constrains: TrajectoryContraints,
+        constraints: np.array,
         start_velocity,
         end_velocity,
         max_velocity,
@@ -37,7 +32,6 @@ class TrajectoryGenerator:
         _reversed=False,
     ):
         # Make theta normal for trajectory generation if path is trajectoryReversed.
-
         if _reversed:
             for i in range(0, len(spline_poses)):
                 spline_poses[i].theta += np.pi
@@ -47,7 +41,7 @@ class TrajectoryGenerator:
         d = self.getDistanceTrajectory(splines)
         t = self.timeParameterizeTrajectory(
             d,
-            constrains,
+            constraints,
             start_velocity,
             end_velocity,
             max_velocity,
@@ -67,7 +61,7 @@ class TrajectoryGenerator:
     def timeParameterizeTrajectory(
         self,
         d_trajectory,
-        constrains: TrajectoryContraints,
+        constraints: np.array,
         start_velocity,
         end_velocity,
         max_velocity,
@@ -92,6 +86,29 @@ class TrajectoryGenerator:
 
             def __str__(self):
                 return f"({self.state}, {self.distance}, {self.max_velocity}, {self.min_acceleration}, {self.max_acceleration}"
+
+        def enforceAccelerationLimits(
+            _reversed: bool, constraints: np.array, constrained_state: ConstrainedState
+        ):
+            for constraint in constraints:
+                accel = constraint.getMinMaxAcceleration(
+                    constrained_state.state,
+                    (1 if not _reversed else -1) * constrained_state.max_velocity,
+                )
+                if not accel.isValid():
+                    raise ValueError("MinMax Acceleration is not valid")
+                constrained_state.min_acceleration = np.max(
+                    (
+                        constrained_state.min_acceleration,
+                        accel.min if not _reversed else -accel.max,
+                    )
+                )
+                constrained_state.max_acceleration = np.min(
+                    (
+                        constrained_state.max_acceleration,
+                        accel.max if not _reversed else -accel.min,
+                    )
+                )
 
         states = np.empty(0, dtype=PoseWithCurvature)
         t = 0
@@ -146,13 +163,20 @@ class TrajectoryGenerator:
                 # state max accel.
 
                 # Enforce all velocity constraints.
-                # TODO apply constraint constraints
+                for constraint in constraints:
+                    constrained_state.max_velocity = np.min(
+                        (
+                            constrained_state.max_velocity,
+                            constraint.getMaxVelocity(constrained_state.state),
+                        )
+                    )
                 if constrained_state.max_velocity < 0:
                     # This should never happen if constraints are well-behaved.
                     raise ValueError("Max Velocity cannot be negative")
-                # Now enforce all acceleration constraints.
 
-                # TODO apply acceleration constraints
+                # Now enforce all acceleration constraints.
+                enforceAccelerationLimits(_reversed, constraints, constrained_state)
+
                 if (
                     constrained_state.min_acceleration
                     > constrained_state.max_acceleration
@@ -167,9 +191,16 @@ class TrajectoryGenerator:
 
                 # If the max acceleration for this constraint state is more conservative than what we had applied, we
                 # need to reduce the max accel at the predecessor state and try again.
-                actual_acceleration = (
-                    constrained_state.max_velocity ** 2 - predecessor.max_velocity ** 2
-                ) / (2.0 * ds)
+                if ds == 0:
+                    actual_acceleration = np.inf * np.sign(
+                        constrained_state.max_velocity ** 2
+                        - predecessor.max_velocity ** 2
+                    )
+                else:
+                    actual_acceleration = (
+                        constrained_state.max_velocity ** 2
+                        - predecessor.max_velocity ** 2
+                    ) / (2 * ds)
                 if constrained_state.max_acceleration < actual_acceleration - epsilon:
                     predecessor.max_acceleration = constrained_state.max_acceleration
                 else:
@@ -193,7 +224,7 @@ class TrajectoryGenerator:
                 # Enforce reverse max reachable velocity limit.
                 # vf = sqrt(vi^2 + 2*a*d), where vi = successor.
                 new_max_velocity = np.sqrt(
-                    successor.max_velocity ** 2 + 2.0 * successor.min_acceleration * ds
+                    successor.max_velocity ** 2 + 2 * successor.min_acceleration * ds
                 )
                 if new_max_velocity >= constrained_state.max_velocity:
                     # No new limits to impose.
@@ -203,7 +234,7 @@ class TrajectoryGenerator:
                     raise ValueError("Max Velocity cannot be NaN")
 
                 # Now check all acceleration constraints with the lower max velocity.
-                # TODO check acceleration constraints
+                enforceAccelerationLimits(_reversed, constraints, constrained_state)
                 if (
                     constrained_state.min_acceleration
                     > constrained_state.max_acceleration
@@ -217,9 +248,16 @@ class TrajectoryGenerator:
 
                 # If the min acceleration for this constraint state is more conservative than what we have applied, we
                 # need to reduce the min accel and try again.
-                actual_acceleration = (
-                    constrained_state.max_velocity ** 2 - successor.max_velocity ** 2
-                ) / (2.0 * ds)
+                if ds == 0:
+                    actual_acceleration = np.inf * np.sign(
+                        constrained_state.max_velocity ** 2
+                        - successor.max_velocity ** 2
+                    )
+                else:
+                    actual_acceleration = (
+                        constrained_state.max_velocity ** 2
+                        - successor.max_velocity ** 2
+                    ) / (2 * ds)
                 if constrained_state.min_acceleration < actual_acceleration - epsilon:
                     successor.min_acceleration = constrained_state.min_acceleration
                 else:
@@ -236,12 +274,11 @@ class TrajectoryGenerator:
             constrained_state = constrained_states[i]
             # Advance t.
             ds = constrained_state.distance - s
-            numerator = constrained_state.max_velocity ** 2 - v ** 2
-            if numerator == 0:
-                accel = 0
+            if ds == 0:
+                accel = 1
             else:
-                accel = numerator / (2 * ds)
-            dt = 0.0
+                accel = (constrained_state.max_velocity ** 2 - v ** 2) / (2 * ds)
+            dt = 0
             if i > 0:
                 if _reversed:
                     timed_states[i - 1].acceleration *= -1
@@ -250,6 +287,7 @@ class TrajectoryGenerator:
                 elif abs(v) > epsilon:
                     dt = ds / v
                 else:
+                    dt = epsilon
                     raise RuntimeError("No valid dt found")
             t += dt
             if np.isnan(t) or np.isinf(t):
