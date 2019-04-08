@@ -1,10 +1,10 @@
 import numpy as np
 from utils.geometry import Vector, Pose, RobotState, boundRadians, PoseWithCurvature
 from utils.physicalstates import ChassisState
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 
-class HermiteSpline:
+class HermiteSpline(ABC):
     def __init__(self, start: Pose, end: Pose):
         self.start = start
         self.end = end
@@ -12,24 +12,23 @@ class HermiteSpline:
     @abstractmethod
     def getPoint(self, t: float) -> Vector:
         """Interpolate a point along the spline."""
-        return Vector(0, 0)
+        raise NotImplementedError
 
     @abstractmethod
     def getD(self, t: float) -> Vector:
-        return Vector(0, 0)
         """Interpolate the derivative along the spline."""
+        raise NotImplementedError
 
     @abstractmethod
     def getDD(self, t: float) -> Vector:
-        return Vector(0, 0)
         """Interpolate the 2nd derivative along the spline."""
+        raise NotImplementedError
 
     @abstractmethod
     def getDDD(self, t: float) -> Vector:
         """Interpolate the 3rd derivative along the spline."""
-        return Vector(0, 0)
+        raise NotImplementedError
 
-    @abstractmethod
     def getCurvature(self, t: float) -> float:
         """Interpolate the curvature along the spline."""
         d = self.getD(t)
@@ -58,8 +57,15 @@ class HermiteSpline:
 
     def getSumDCurvature2(self, dt: float = 0.01) -> float:
         sum_dc2 = 0
-        for i in range(0, self.length * int(1 / dt) - 1):
+        for i in range(0, int(1 / dt) - 1):
             sum_dc2 += dt * (self.getDCurvature(i * dt) ** 2)
+        return sum_dc2
+
+    @staticmethod
+    def getSumDCurvatures2(splines: np.array, dt: float = 0.01) -> float:
+        sum_dc2 = 0
+        for spline in splines:
+            sum_dc2 += spline.getDCurvature(dt)
         return sum_dc2
 
     def getHeading(self, t: float) -> float:
@@ -124,8 +130,8 @@ class HermiteSpline:
 
     @abstractmethod
     def optimizeSpline(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def computeCoefficients(self) -> None:
-        pass
+        raise NotImplementedError
