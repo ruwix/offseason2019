@@ -4,7 +4,6 @@ import numpy as np
 
 from utils.geometry import Pose, PoseWithCurvature
 
-
 MIN_SAMPLE_SIZE = 500
 
 

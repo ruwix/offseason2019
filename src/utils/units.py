@@ -1,6 +1,5 @@
 import numpy as np
 
-
 inches_per_foot = 12
 feet_per_inch = 0.083333
 

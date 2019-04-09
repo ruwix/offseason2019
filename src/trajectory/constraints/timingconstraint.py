@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from utils.geometry import PoseWithCurvature
 from utils.mathextension import MinMax

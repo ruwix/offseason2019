@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+autoflake -ir .
+isort -rc .
+black .
+

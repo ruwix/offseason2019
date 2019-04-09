@@ -6,7 +6,6 @@ from components.chassis import Chassis
 from utils import units
 from utils.geometry import Vector
 
-
 config.config_obj["pyfrc"]["robot"]["w"] = (
     config.config_obj["pyfrc"]["robot"]["w_m"] * units.feet_per_meter
 )
