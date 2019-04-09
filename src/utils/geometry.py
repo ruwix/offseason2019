@@ -60,6 +60,8 @@ class Vector:
         elif isinstance(other, (int, float)):
             x = self.x + other
             y = self.y + other
+        else:
+            return NotImplemented
         return Vector(x, y)
 
     def __radd__(self, other):
@@ -80,6 +82,8 @@ class Vector:
             x = self.x * other
             y = self.y * other
             return Vector(x, y)
+        else:
+            return NotImplemented
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -88,6 +92,8 @@ class Vector:
         if isinstance(other, (int, float)):
             x = self.x / other
             y = self.y / other
+        else:
+            return NotImplemented
         return Vector(x, y)
 
     def __rtruediv__(self, other):
@@ -202,6 +208,8 @@ class Pose:
     def __add__(self, other):
         if isinstance(other, self.__class__):
             return self.transformBy(other)
+        else:
+            return NotImplemented
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -217,6 +225,8 @@ class Pose:
             x = self.x * other
             y = self.y * other
             theta = self.theta * other
+        else:
+            return NotImplemented
         return Pose(x, y, theta)
 
     def __rmul__(self, other):
@@ -227,6 +237,8 @@ class Pose:
             x = self.x / other
             y = self.y / other
             theta = self.theta / other
+        else:
+            return NotImplemented
         return Pose(x, y, theta)
 
     def __rtruediv__(self, other):
@@ -314,6 +326,8 @@ class PoseWithCurvature:
             curvature = self.curvature + other.curvature
             dkds = self.dkds + other.dkds
             return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
+        else:
+            return NotImplemented
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -329,6 +343,8 @@ class PoseWithCurvature:
             pose = self.pose / other
             curvature = self.curvature * other
             dkds = self.dkds * other
+        else: 
+            return NotImplemented
         return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
 
     def __rmul__(self, other):
@@ -339,6 +355,8 @@ class PoseWithCurvature:
             pose = self.pose / other
             curvature = self.curvature / other
             dkds = self.dkds / other
+        else: 
+            return NotImplemented
         return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
 
     def __rtruediv__(self, other):
@@ -413,6 +431,8 @@ class Twist:
             dx = self.dx + other.dx
             dy = self.dy + other.dy
             dtheta = self.dtheta + other.dtheta
+        else: 
+            return NotImplemented
         return Twist(dx, dy, dtheta)
 
     def __radd__(self, other):
@@ -429,6 +449,8 @@ class Twist:
             dx = self.dx * other
             dy = self.dy * other
             dtheta = self.dtheta * other
+        else: 
+            return NotImplemented
         return Twist(dx, dy, dtheta)
 
     def __rmul__(self, other):
@@ -439,6 +461,8 @@ class Twist:
             dx = self.dx / other
             dy = self.dy / other
             dtheta = self.dy / other
+        else: 
+            return NotImplemented
         return Twist(dx, dy, dtheta)
 
     def __rtruediv__(self, other):
@@ -565,6 +589,8 @@ class RobotState:
             omega = self.omega + other.omega
             a = self.a + other.a
             alpha = self.alpha + other.alpha
+        else: 
+            return NotImplemented
         return RobotState(x, y, heading, v, omega, a, alpha)
 
     def __radd__(self, other):
@@ -585,7 +611,8 @@ class RobotState:
             omega = self.omega * other
             a = self.a * other.a
             alpha = self.alpha * other.alpha
-
+        else: 
+            return NotImplemented
         return RobotState(x, y, heading, v, omega, a, alpha)
 
     def __rmul__(self, other):
@@ -600,6 +627,8 @@ class RobotState:
             omega = self.omega / other
             a = self.a / other.a
             alpha = self.alpha / other.alpha
+        else: 
+            return NotImplemented
         return RobotState(x, y, heading, v, omega, a, alpha)
 
     def __rtruediv__(self, other):

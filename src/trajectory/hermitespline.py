@@ -35,7 +35,8 @@ class HermiteSpline(ABC):
         """Interpolate the curvature along the spline."""
         d = self.getD(t)
         dd = self.getDD(t)
-        return (d.x * dd.y - d.y * dd.x) / ((d.x ** 2 + d.y ** 2) ** 1.5)
+        dx2dy2 = d.x ** 2 + d.y ** 2
+        return (d.x * dd.y - d.y * dd.x) / (dx2dy2 ** 1.5)
 
     def getRadius(self, t: float) -> float:
         """Interpolate the radius along the spline."""
@@ -86,42 +87,13 @@ class HermiteSpline(ABC):
         pose = self.getPose(t)
         curvature = self.getCurvature(t)
         d = self.getD(t)
-        dkds = self.getDCurvature(t) / np.hypot(d.x, d.y)
+        dkds = self.getDCurvature(t) / self.getVelocity(t)
         return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
 
-    def getLinearVelocity(self, t: float) -> float:
+    def getVelocity(self, t: float) -> float:
         """Interpolate the linear velocity of a particle traveling along the spline."""
         d = self.getD(t)
         return d.getMagnitude()
-
-    def getAngularVelocity(self, t: float) -> float:
-        """Interpolate the angular velocity of a particle traveling along the spline."""
-        omega = self.getLinearVelocity(t) * self.getCurvature(t)
-        return omega
-
-    def getVelocities(self, t: float) -> ChassisState:
-        """Interpolate the velocities of a particle traveling along the spline."""
-        v = self.getLinearVelocity(t)
-        omega = self.getAngularVelocity(t)
-        return ChassisState(v, omega)
-
-    def getLinearAcceleration(self, t: float) -> float:
-        """Interpolate the linear acceleration of a particle traveling along the spline."""
-        d = self.getD(t)
-        dd = self.getDD(t)
-        direction = np.sign(d.x * dd.x + d.y * dd.y)
-        return direction * dd.getMagnitude()
-
-    def getAngularAcceleration(self, t: float) -> float:
-        """Interpolate the angular acceleration of a particle traveling along the spline."""
-        alpha = self.getLinearAcceleration(t) * self.getCurvature(t)
-        return alpha
-
-    def getAcceleration(self, t: float) -> ChassisState:
-        """Interpolate the acceleration of a particle traveling along the spline."""
-        a = self.getLinearAcceleration(t)
-        alpha = self.getAngularAcceleration(t)
-        return ChassisState(a, alpha)
 
     def getArcLength(self, dt: float = 0.01) -> float:
         arc_length = 0
