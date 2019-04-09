@@ -33,8 +33,7 @@ class HermiteSpline(ABC):
         """Interpolate the curvature along the spline."""
         d = self.getD(t)
         dd = self.getDD(t)
-        dx2dy2 = d.x ** 2 + d.y ** 2
-        return (d.x * dd.y - d.y * dd.x) / (dx2dy2 ** 1.5)
+        return (d.x * dd.y - d.y * dd.x) / ((d.x ** 2 + d.y ** 2) ** 1.5)
 
     def getRadius(self, t: float) -> float:
         """Interpolate the radius along the spline."""
@@ -50,10 +49,11 @@ class HermiteSpline(ABC):
         dd = self.getDD(t)
         ddd = self.getDDD(t)
         dx2dy2 = d.x ** 2 + d.y ** 2
-        dc = (d.x * ddd.y - d.y * ddd.x) / (dx2dy2 ** 1.5) - 3 * (
-            d.x * dd.y - d.y * dd.x
-        ) * (d.x * dd.x + d.y * dd.y) / (dx2dy2 ** 2.5)
-        return dc
+        num = (d.x * ddd.y - d.y * ddd.x) * dx2dy2 - 3 * (d.x * dd.y - d.y * dd.x) * (
+            d.x * dd.x + d.y * dd.y
+        )
+        den = (d.x ** 2 + d.y ** 2) ** 2.5
+        return num / den
 
     def getSumDCurvature2(self, dt: float = 0.01) -> float:
         sum_dc2 = 0
@@ -83,7 +83,8 @@ class HermiteSpline(ABC):
         """Interpolate a pose with a curvature along the spline."""
         pose = self.getPose(t)
         curvature = self.getCurvature(t)
-        dkds = self.getDCurvature(t) / self.getLinearVelocity(t)
+        d = self.getD(t)
+        dkds = self.getDCurvature(t) / np.hypot(d.x, d.y)
         return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
 
     def getLinearVelocity(self, t: float) -> float:

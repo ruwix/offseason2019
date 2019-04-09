@@ -71,8 +71,8 @@ class QuinticHermiteSpline(HermiteSpline):
 
     def getDDD(self, t: float) -> Vector:
         """Interpolate the 3rd derivative along the spline."""
-        dddx = (60 * self.ax * t ** 2) + (24 * self.bx * t) + (6 * self.dx)
-        dddy = (60 * self.ay * t ** 2) + (24 * self.by * t) + (6 * self.dy)
+        dddx = (60 * self.ax * t ** 2) + (24 * self.bx * t) + (6 * self.cx)
+        dddy = (60 * self.ay * t ** 2) + (24 * self.by * t) + (6 * self.cy)
         return Vector(dddx, dddy)
 
     @staticmethod

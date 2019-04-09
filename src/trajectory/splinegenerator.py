@@ -2,7 +2,7 @@ import numpy as np
 from utils.geometry import Pose, PoseWithCurvature
 import itertools
 
-MIN_SAMPLE_SIZE = 100
+MIN_SAMPLE_SIZE = 500
 
 
 def zipPairs(iterable):
