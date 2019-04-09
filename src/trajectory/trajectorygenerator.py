@@ -41,6 +41,8 @@ class TrajectoryGenerator:
         splines = np.empty(len(spline_poses) - 1, dtype=QuinticHermiteSpline)
         for i in range(0, len(spline_poses) - 1):
             splines[i] = QuinticHermiteSpline(spline_poses[i], spline_poses[i + 1])
+        self._reversed = _reversed
+
         d = self.getDistanceTrajectory(splines)
         t = self.timeParameterizeTrajectory(
             d,
@@ -59,6 +61,9 @@ class TrajectoryGenerator:
 
     def getDistanceTrajectory(self, splines: np.array) -> DistanceTrajectory:
         t = self.getTrajectoryPosesFromSplines(splines)
+        if self._reversed:
+            for i in range(0, len(t)):
+                t[i].theta -= np.pi
         return DistanceTrajectory(t)
 
     def timeParameterizeTrajectory(
@@ -208,6 +213,7 @@ class TrajectoryGenerator:
                     if actual_acceleration > predecessor.min_acceleration + epsilon:
                         predecessor.max_acceleration = actual_acceleration
                     break
+            predecessor = constrained_state
 
         # Backward pass.
         successor = ConstrainedState()
@@ -218,7 +224,7 @@ class TrajectoryGenerator:
         successor.max_acceleration = max_acceleration
         for i in reversed(range(len(states))):
             constrained_state = constrained_states[i]
-            ds = constrained_state.distance - successor.distance
+            ds = constrained_state.distance - successor.distance  # Will be negative
             while True:
                 # Enforce reverse max reachable velocity limit.
                 # vf = sqrt(vi^2 + 2*a*d), where vi = successor.
