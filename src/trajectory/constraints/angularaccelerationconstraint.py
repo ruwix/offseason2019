@@ -1,7 +1,8 @@
-from trajectory.constraints.timingconstraint import TimingConstraint
-from utils.mathextension import MinMax
 import numpy as np
+
+from trajectory.constraints.timingconstraint import TimingConstraint
 from utils.geometry import PoseWithCurvature
+from utils.mathextension import MinMax
 
 
 class AngularAccelerationConstraint(TimingConstraint):

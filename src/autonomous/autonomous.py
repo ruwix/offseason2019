@@ -1,14 +1,11 @@
-from magicbot import AutonomousStateMachine, timed_state, state
-import wpilib
-
-from components.chassis import Chassis
-from components.autoselector import AutoSelector, AutoSide, AutoMode
-
-from controllers.ramsete import Ramsete
-from trajectory.trajectorygenerator import TrajectoryGenerator
-from autonomous.paths import Path
 import numpy as np
-from utils.geometry import RobotState
+import wpilib
+from magicbot import AutonomousStateMachine, state, timed_state
+
+from autonomous.paths import Path
+from components.autoselector import AutoMode, AutoSelector, AutoSide
+from components.chassis import Chassis
+from controllers.ramsete import Ramsete
 from trajectory.constraints.angularaccelerationconstraint import (
     AngularAccelerationConstraint,
 )
@@ -16,6 +13,8 @@ from trajectory.constraints.centripetalaccelerationconstraint import (
     CentripetalAccelerationConstraint,
 )
 from trajectory.constraints.timingconstraint import TimingConstraint
+from trajectory.trajectorygenerator import TrajectoryGenerator
+from utils.geometry import RobotState
 from utils.physicalstates import ChassisState
 
 

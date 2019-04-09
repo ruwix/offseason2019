@@ -1,13 +1,15 @@
-import magicbot
-import wpilib
-import ctre
-import numpy as np
-from networktables import NetworkTables
+from copy import deepcopy
 from enum import Enum
+
+import ctre
+import magicbot
+import numpy as np
+import wpilib
+from networktables import NetworkTables
+
+from utils import units
 from utils.geometry import RobotState
 from utils.physicalstates import ChassisState
-from copy import deepcopy
-from utils import units
 
 
 class Chassis:

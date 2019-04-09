@@ -1,5 +1,6 @@
-import ctre
 import logging
+
+import ctre
 from networktables import NetworkTables
 
 

@@ -1,8 +1,10 @@
+from copy import copy
+
 import numpy as np
-from utils.geometry import Vector, Pose, RobotState
+
 from trajectory.hermitespline import HermiteSpline
 from trajectory.quadraticspline import QuadraticSpline
-from copy import copy
+from utils.geometry import Pose, RobotState, Vector
 
 
 class QuinticHermiteSpline(HermiteSpline):
@@ -290,4 +292,3 @@ class QuinticHermiteSpline(HermiteSpline):
         self.dy = 0.5 * self.ddy0
         self.ey = self.dy0
         self.fy = self.start.y
-

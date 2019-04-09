@@ -6,14 +6,12 @@ Who implemented from:
 NASA Ames Robotics "The Cheesy Poofs"
 Team 254
 """
+import numpy as np
+
 from models.dcmotortransmission import DCMotorTransmission
 from utils.epsilon import EPSILON, epsilonEquals
-
-import numpy as np
-from utils.physicalstates import WheelState, ChassisState, DriveDynamics
-
-
 from utils.mathextension import MinMax
+from utils.physicalstates import ChassisState, DriveDynamics, WheelState
 
 
 class DifferentialDrive:
@@ -413,4 +411,3 @@ class DifferentialDrive:
                     min = np.min(min, accel)
                     max = np.max(max, accel)
         return MinMax(min, max)
-

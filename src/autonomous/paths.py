@@ -1,8 +1,10 @@
-import numpy as np
+import os
 from csv import reader
 from enum import Enum
+
+import numpy as np
+
 import paths
-import os
 from utils.geometry import Pose
 
 

@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-import magicbot
-import wpilib
 import ctre
-from components.chassis import Chassis
+import magicbot
+import numpy as np
+import wpilib
+
 from components.autoselector import AutoSelector
+from components.chassis import Chassis
 from controllers.ramsete import Ramsete
 from utils.lazytalonsrx import LazyTalonSRX
-import numpy as np
 
 
 class Robot(magicbot.MagicRobot):

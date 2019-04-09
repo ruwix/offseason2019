@@ -1,11 +1,11 @@
 import numpy as np
+from ctre import ControlMode
+from pyfrc import config
 
 from components.chassis import Chassis
-from ctre import ControlMode
 from utils import units
 from utils.geometry import Vector
-from utils.geometry import Vector
-from pyfrc import config
+
 
 config.config_obj["pyfrc"]["robot"]["w"] = (
     config.config_obj["pyfrc"]["robot"]["w_m"] * units.feet_per_meter

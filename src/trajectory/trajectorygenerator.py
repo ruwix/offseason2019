@@ -1,16 +1,14 @@
 import numpy as np
-from trajectory.quintichermitespline import QuinticHermiteSpline
+from pyfrc.sim import get_user_renderer
+from wpilib import RobotBase
 
 from trajectory.cubichermitespline import CubicHermiteSpline
-
-from pyfrc.sim import get_user_renderer
-
-from utils.geometry import RobotState, boundRadians, Vector, Pose, PoseWithCurvature
-from utils import units
-from wpilib import RobotBase
-from trajectory.splinegenerator import parameterizeSplines
 from trajectory.distancetrajectory import DistanceTrajectory
+from trajectory.quintichermitespline import QuinticHermiteSpline
+from trajectory.splinegenerator import parameterizeSplines
 from trajectory.timedtrajectory import TimedState, TimedTrajectory
+from utils import units
+from utils.geometry import Pose, PoseWithCurvature, RobotState, Vector, boundRadians
 
 
 class TrajectoryGenerator:
@@ -321,4 +319,3 @@ class TrajectoryGenerator:
                 color="#FFFFFF",
                 width=2,
             )
-

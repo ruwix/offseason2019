@@ -1,9 +1,10 @@
-from trajectory.constraints.timingconstraint import TimingConstraint
-from utils.mathextension import MinMax
 import numpy as np
-from utils.physicalstates import ChassisState
+
 from models.differentialdrive import DifferentialDrive
+from trajectory.constraints.timingconstraint import TimingConstraint
 from utils.geometry import PoseWithCurvature
+from utils.mathextension import MinMax
+from utils.physicalstates import ChassisState
 
 
 class DifferentialDriveDynamicsConstraint(TimingConstraint):
@@ -22,4 +23,3 @@ class DifferentialDriveDynamicsConstraint(TimingConstraint):
             state.curvature,
             self.max_voltage,
         )
-

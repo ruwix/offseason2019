@@ -23,4 +23,3 @@ class QuadraticSpline:
 
     def getVertexXCoordinate(self) -> float:
         return -self.getB() / (2 * self.getA())
-
