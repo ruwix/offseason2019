@@ -6,7 +6,12 @@
 - Lorem ipsum dolor sit amet
 
 ## Formatting
-- Use of the `black` formatter ([https://github.com/ambv/black](https://github.com/ambv/black))
+- `format` script in source folder
+- `autoflake` for removing unused imports  ([https://github.com/myint/autoflake](https://github.com/myint/autoflake))
+    - Install with `pip install autoflake`
+- `isort` for organizing imports  ([https://github.com/timothycrosley/isort](https://github.com/timothycrosley/isort))
+    - Install with `pip install isort`
+- `black` for formatting ([https://github.com/ambv/black](https://github.com/ambv/black))
     - Install with `pip install black`
 
 ## Naming
@@ -22,10 +27,9 @@
 
 ## Units
 - Time: `seconds` (some native function use `ms`)
-- Length: `meters` (some native functions use `feet` or `native units`)
-- Angle: `radians` (some native functions use `degrees`; paths are saved with `degrees` but are converted to `radians` when imported)
+- Length: `meters` (some native functions use `feet`)
+- Angle: `radians` (some native functions use `degrees`; the `config.json` file uses degrees; paths are saved with `degrees` but are converted to `radians` when imported)
 - Weight: `kilograms`
-
 - Coordinates:
     - x: `left/right`
     - y: `backwards/forwards`
