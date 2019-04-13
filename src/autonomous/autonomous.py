@@ -14,7 +14,6 @@ from trajectory.constraints.centripetalaccelerationconstraint import (
 )
 from trajectory.constraints.timingconstraint import TimingConstraint
 from trajectory.trajectorygenerator import TrajectoryGenerator
-from utils.geometry import RobotState
 from utils.physicalstates import ChassisState
 
 
@@ -35,8 +34,8 @@ class Autonomous(AutonomousStateMachine):
     def getTrajectory(self, poses, _reversed=False):
         constraints = np.array(
             [
-                # CentripetalAccelerationConstraint(5.0),
-                # AngularAccelerationConstraint(4.0),
+                CentripetalAccelerationConstraint(5.0),
+                AngularAccelerationConstraint(4.0),
             ],
             dtype=TimingConstraint,
         )
@@ -69,17 +68,10 @@ class Autonomous(AutonomousStateMachine):
             return False
         if self.timer.get() < self.trajectory.length:
             state = self.chassis.state
-            state_d_t = self.trajectory.getState(self.timer.get())
-            state_d = RobotState(
-                x=state_d_t.state.x,
-                y=state_d_t.state.y,
-                heading=state_d_t.state.theta,
-                v=state_d_t.velocity,
-                omega=state_d_t.velocity * state_d_t.state.curvature,
-            )
+            state_d = self.trajectory.getState(self.timer.get())
             velocity = self.ramsete.update(state, state_d)
             print(
-                f"{round(self.timer.get(),3)}\t{round(state_d.v,3)}\t{round(self.ramsete.getError(),3)}"
+                f"{round(self.timer.get(),3)}\t{round(self.ramsete.getError(),3)}"
             )
 
             self.chassis.setChassisState(velocity)
@@ -101,18 +93,6 @@ class Autonomous(AutonomousStateMachine):
             self.timer.reset()
             self.timer.start()
         if not self.followTrajectory():
-            self.next_state("leftRocketBackup")
-
-    @state
-    def leftRocketBackup(self, initial_call):
-        if initial_call:
-            self.trajectory = self.getTrajectory(
-                Path.LEFT_ROCKET_BACKUP.getPoses(), _reversed=True
-            )
-            self.tg.drawSimulation(self.trajectory)
-            self.timer.reset()
-            self.timer.start()
-        if not self.followTrajectory():
             self.next_state("leftRocketToLoadingStation")
 
     @state
@@ -120,18 +100,6 @@ class Autonomous(AutonomousStateMachine):
         if initial_call:
             self.trajectory = self.getTrajectory(
                 Path.LEFT_ROCKET_2_LOADING_STATION.getPoses(), _reversed=False
-            )
-            self.tg.drawSimulation(self.trajectory)
-            self.timer.reset()
-            self.timer.start()
-        if not self.followTrajectory():
-            self.next_state("loadingStationBackup")
-
-    @state
-    def loadingStationBackup(self, initial_call):
-        if initial_call:
-            self.trajectory = self.getTrajectory(
-                Path.LOADING_STATION_BACKUP.getPoses(), _reversed=True
             )
             self.tg.drawSimulation(self.trajectory)
             self.timer.reset()
