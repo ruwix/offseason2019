@@ -119,6 +119,90 @@ def fitParabola(p0: Vector, p1: Vector, p2: Vector) -> float:
     return -b / (2 * a)
 
 
+class Rotation:
+    def __init__(self, x: float = 0, y: float = 0, normailze: bool = False):
+        magntitude = np.hypot(x, y)
+        if normailze:
+            if magntitude > EPSILON:
+                self.sin = y / magntitude
+                self.cos = x / magntitude
+            else:
+                self.sin = 0
+                self.cos = 1
+        else:
+            self.sin = y
+            self.cos = x
+        self.value = np.arctan2(self.sin, self.cos)
+
+    @staticmethod
+    def fromTheta(theta):
+        return Rotation(np.cos(theta), np.sin(theta))
+
+    def tan(self):
+        if abs(self.cos) < EPSILON:
+            return np.sign(self.sin) * np.inf
+        return self.sin / self.cos
+
+    def theta(self):
+        return self.value
+
+    def rotateBy(self, other):
+        cos = self.cos * other.cos - self.sin * other.sin
+        sin = self.cos * other.sin + self.sin * other.cos
+        return Rotation(cos, sin, True)
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and epislonEquals(
+            self.theta(), other.theta()
+        )
+
+    def __add__(self, other):
+        if isinstance(other, self.__class__):
+            return self.rotateBy(other)
+        else:
+            return NotImplemented
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return self.__sub__(other)
+
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            cos = self.cos * other
+            sin = self.sin * other
+        else:
+            return NotImplemented
+        return Rotation(cos, sin)
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __truediv__(self, other):
+        if isinstance(other, (int, float)):
+            cos = self.cos / other
+            sin = self.sin / other
+        else:
+            return NotImplemented
+        return Rotation(cos, sin)
+
+    def __rtruediv__(self, other):
+        return self.__truediv__(other)
+
+    def __neg__(self):
+        return Rotation(self.cos, -self.sin)
+
+    def __round__(self, ndigits=0):
+        return Rotation(round(self.cos, ndigits), round(self.sin, ndigits))
+
+    def __str__(self):
+        return f"({self.cos}, {self.sin})"
+
+
 class Pose:
     def __init__(self, x: float = 0, y: float = 0, theta: float = 0):
         self.point = Vector(x, y)
@@ -127,7 +211,7 @@ class Pose:
     def distance(self, other):
         return self.point.distance(other.point)
 
-    def isColinear(self, other):
+    def isCollinear(self, other):
         if abs(self.theta - other.theta) > 0.001:
             return False
         diff = other - self
@@ -178,7 +262,7 @@ class Pose:
         elif t >= 1:
             return other
         else:
-            twist = (other - self).getTwist()
+            twist = (-other + self).getTwist()
             return self + (twist * t).asPose()
 
     @property
@@ -343,7 +427,7 @@ class PoseWithCurvature:
             pose = self.pose / other
             curvature = self.curvature * other
             dkds = self.dkds * other
-        else: 
+        else:
             return NotImplemented
         return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
 
@@ -355,7 +439,7 @@ class PoseWithCurvature:
             pose = self.pose / other
             curvature = self.curvature / other
             dkds = self.dkds / other
-        else: 
+        else:
             return NotImplemented
         return PoseWithCurvature(pose.x, pose.y, pose.theta, curvature, dkds)
 
@@ -431,7 +515,7 @@ class Twist:
             dx = self.dx + other.dx
             dy = self.dy + other.dy
             dtheta = self.dtheta + other.dtheta
-        else: 
+        else:
             return NotImplemented
         return Twist(dx, dy, dtheta)
 
@@ -449,7 +533,7 @@ class Twist:
             dx = self.dx * other
             dy = self.dy * other
             dtheta = self.dtheta * other
-        else: 
+        else:
             return NotImplemented
         return Twist(dx, dy, dtheta)
 
@@ -461,7 +545,7 @@ class Twist:
             dx = self.dx / other
             dy = self.dy / other
             dtheta = self.dy / other
-        else: 
+        else:
             return NotImplemented
         return Twist(dx, dy, dtheta)
 
@@ -481,174 +565,3 @@ class Twist:
     def __str__(self):
         return f"({self.dx}, {self.dy}, {self.dtheta})"
 
-
-class RobotState:
-    def __init__(
-        self,
-        x: float = 0,
-        y: float = 0,
-        heading: float = 0,
-        v: float = 0,
-        omega: float = 0,
-        a: float = 0,
-        alpha: float = 0,
-    ):
-        self.pose = Pose(x, y, heading)
-        self.velocity = ChassisState(v, omega)
-        self.acceleration = ChassisState(a, alpha)
-
-    @property
-    def x(self):
-        return self.pose.x
-
-    @property
-    def y(self):
-        return self.pose.y
-
-    @property
-    def heading(self):
-        return self.pose.theta
-
-    @property
-    def v(self):
-        return self.velocity.linear
-
-    @property
-    def omega(self):
-        return self.velocity.angular
-
-    @property
-    def a(self):
-        return self.acceleration.linear
-
-    @property
-    def alpha(self):
-        return self.acceleration.angular
-
-    @x.setter
-    def x(self, value):
-        self.pose.x = value
-
-    @y.setter
-    def y(self, value):
-        self.pose.y = value
-
-    @heading.setter
-    def heading(self, value):
-        self.pose.theta = value
-
-    @v.setter
-    def v(self, value):
-        self.velocity.linear = value
-
-    @omega.setter
-    def omega(self, value):
-        self.velocity.angular = value
-
-    @a.setter
-    def a(self, value):
-        self.acceleration.linear = value
-
-    @alpha.setter
-    def alpha(self, value):
-        self.acceleration.angular = value
-
-    def update(self, last_state, dt: float) -> None:
-        dstate = self - last_state
-        direction = (
-            1
-            if np.sign(np.arctan2(dstate.y, dstate.x))
-            == np.sign(boundRadians(dstate.heading))
-            else -1
-        )
-        self.v = direction * np.hypot(dstate.x, dstate.y) / dt
-        self.omega = dstate.heading / dt
-        dstate = self - last_state
-        direction = np.sign(dstate.v)
-        self.a = dstate.v / dt
-        self.alpha = dstate.omega / dt
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, self.__class__)
-            and (self.x == other.x)
-            and (self.y == other.y)
-            and (self.heading == other.heading)
-            and (self.v == other.v)
-            and (self.omega == other.omega)
-            and (self.a == other.a)
-            and (self.alpha == other.alpha)
-        )
-
-    def __add__(self, other):
-        if isinstance(other, self.__class__):
-            x = self.x + other.x
-            y = self.y + other.y
-            heading = self.heading + other.heading
-            v = self.v + other.v
-            omega = self.omega + other.omega
-            a = self.a + other.a
-            alpha = self.alpha + other.alpha
-        else: 
-            return NotImplemented
-        return RobotState(x, y, heading, v, omega, a, alpha)
-
-    def __radd__(self, other):
-        return self.__add__(other)
-
-    def __sub__(self, other):
-        return self + (-other)
-
-    def __rsub__(self, other):
-        return self.__sub__(other)
-
-    def __mul__(self, other):
-        if isinstance(other, (int, float)):
-            x = self.x * other
-            y = self.y * other
-            heading = self.heading * other
-            v = self.v * other
-            omega = self.omega * other
-            a = self.a * other.a
-            alpha = self.alpha * other.alpha
-        else: 
-            return NotImplemented
-        return RobotState(x, y, heading, v, omega, a, alpha)
-
-    def __rmul__(self, other):
-        return self.__mul__(other)
-
-    def __truediv__(self, other):
-        if isinstance(other, (int, float)):
-            x = self.x / other
-            y = self.y / other
-            heading = self.heading / other
-            v = self.v / other
-            omega = self.omega / other
-            a = self.a / other.a
-            alpha = self.alpha / other.alpha
-        else: 
-            return NotImplemented
-        return RobotState(x, y, heading, v, omega, a, alpha)
-
-    def __rtruediv__(self, other):
-        return self.__truediv__(other)
-
-    def __neg__(self):
-        return RobotState(
-            -self.x, -self.y, -self.heading, -self.v, -self.omega, -self.a, -self.alpha
-        )
-
-    def __round__(self, ndigits=0):
-        return RobotState(
-            round(self.x, ndigits),
-            round(self.y, ndigits),
-            round(self.heading, ndigits),
-            round(self.v, ndigits),
-            round(self.omega, ndigits),
-            round(self.a, ndigits),
-            round(self.alpha, ndigits),
-        )
-
-    def __str__(self):
-        return f"({self.x},\t{self.y},\t{self.heading},\t{self.v},\t{self.omega},\t{self.a},\t{self.alpha})"

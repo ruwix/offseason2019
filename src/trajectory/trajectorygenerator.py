@@ -8,7 +8,7 @@ from trajectory.quintichermitespline import QuinticHermiteSpline
 from trajectory.splinegenerator import parameterizeSplines
 from trajectory.timedtrajectory import TimedState, TimedTrajectory
 from utils import units
-from utils.geometry import Pose, PoseWithCurvature, RobotState, Vector, boundRadians
+from utils.geometry import Pose, PoseWithCurvature, Vector, boundRadians
 
 
 class TrajectoryGenerator:

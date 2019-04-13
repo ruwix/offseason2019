@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from utils.geometry import Pose, PoseWithCurvature, RobotState, Vector, boundRadians
+from utils.geometry import Pose, PoseWithCurvature, Vector, boundRadians
 from utils.physicalstates import ChassisState
 
 

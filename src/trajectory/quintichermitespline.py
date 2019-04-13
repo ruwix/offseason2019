@@ -4,7 +4,7 @@ import numpy as np
 
 from trajectory.hermitespline import HermiteSpline
 from trajectory.quadraticspline import QuadraticSpline
-from utils.geometry import Pose, RobotState, Vector
+from utils.geometry import Pose, Vector
 
 
 class QuinticHermiteSpline(HermiteSpline):
@@ -100,9 +100,9 @@ class QuinticHermiteSpline(HermiteSpline):
             control_points[i] = Vector()
         magnitude = 0
         for i in range(0, len(splines) - 1):
-            if splines[i].start.isColinear(splines[i + 1].start) or splines[
+            if splines[i].start.isCollinear(splines[i + 1].start) or splines[
                 i
-            ].end.isColinear(splines[i + 1].end):
+            ].end.isCollinear(splines[i + 1].end):
                 continue
             original = HermiteSpline.getSumDCurvatures2(splines)
             temp = copy(splines[i])
@@ -174,9 +174,9 @@ class QuinticHermiteSpline(HermiteSpline):
         p2 = Vector(0.0, HermiteSpline.getSumDCurvatures2(splines))
 
         for i in range(len(splines) - 1):
-            if splines[i].start.isColinear(splines[i + 1].start) or splines[
+            if splines[i].start.isCollinear(splines[i + 1].start) or splines[
                 i
-            ].end.isColinear(splines[i + 1].end):
+            ].end.isCollinear(splines[i + 1].end):
                 continue
             control_points[i].x *= QuinticHermiteSpline.STEP_SIZE / magnitude
             control_points[i].y *= QuinticHermiteSpline.STEP_SIZE / magnitude
@@ -194,9 +194,9 @@ class QuinticHermiteSpline(HermiteSpline):
         )
 
         for i in range(len(splines) - 1):
-            if splines[i].start.isColinear(splines[i + 1].start) or splines[
+            if splines[i].start.isCollinear(splines[i + 1].start) or splines[
                 i
-            ].end.isColinear(splines[i + 1].end):
+            ].end.isCollinear(splines[i + 1].end):
                 continue
 
             splines[i].ddx1 += 2 * control_points[i].x
@@ -212,9 +212,9 @@ class QuinticHermiteSpline(HermiteSpline):
         )
         step_size = QuadraticSpline(p1, p2, p3).getVertexXCoordinate()
         for i in range(len(splines) - 1):
-            if splines[i].start.isColinear(splines[i + 1].start) or splines[
+            if splines[i].start.isCollinear(splines[i + 1].start) or splines[
                 i
-            ].end.isColinear(splines[i + 1].end):
+            ].end.isCollinear(splines[i + 1].end):
                 continue
             control_points[i].x *= 1 + step_size / QuinticHermiteSpline.STEP_SIZE
             control_points[i].y *= 1 + step_size / QuinticHermiteSpline.STEP_SIZE

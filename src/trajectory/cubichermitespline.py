@@ -1,7 +1,7 @@
 import numpy as np
 
 from trajectory.hermitespline import HermiteSpline
-from utils.geometry import Pose, RobotState, Vector
+from utils.geometry import Pose, Vector
 
 
 class CubicHermiteSpline(HermiteSpline):
