@@ -23,19 +23,23 @@ class Autonomous(AutonomousStateMachine):
     DEFAULT = True
 
     chassis: Chassis
-    ramsete: Ramsete
     autoselector: AutoSelector
+
+    KBETA = 2.0
+    KZETA = 0.7
 
     def __init__(self):
         self.timer = wpilib.Timer()
         self.trajectory = None
         self.tg = TrajectoryGenerator()
+        self.ramsete = Ramsete(self.KBETA, self.KZETA)
 
     def getTrajectory(self, poses, _reversed=False):
         constraints = np.array(
             [
                 CentripetalAccelerationConstraint(5.0),
                 AngularAccelerationConstraint(4.0),
+                # TODO add drive dynamics constraints
             ],
             dtype=TimingConstraint,
         )
@@ -53,15 +57,14 @@ class Autonomous(AutonomousStateMachine):
     def initMode(self, initial_call):
         side, mode = AutoSide.LEFT, AutoMode.ROCKET  # self.autoselector.getSelection()
 
-        self.next_state("leftStartToRocket")
-        # if side == AutoSide.LEFT:
-        #     self.chassis.setState(1.70, -1.09, 0)
-        # if mode == 0:
-        #     self.next_state("crossLine")
-        # elif side == AutoSide.LEFT and mode == AutoMode.ROCKET:
-        #     self.next_state("leftStartToRocket")
-        # else:
-        #     self.next_state("stop")
+        if side == AutoSide.LEFT:
+            self.chassis.setState(1.70, -1.09, 0)
+        if mode == 0:
+            self.next_state("crossLine")
+        elif side == AutoSide.LEFT and mode == AutoMode.ROCKET:
+            self.next_state("leftStartToRocket")
+        else:
+            self.next_state("stop")
 
     def followTrajectory(self):
         if self.trajectory == None:
@@ -70,10 +73,7 @@ class Autonomous(AutonomousStateMachine):
             state = self.chassis.state
             state_d = self.trajectory.getState(self.timer.get())
             velocity = self.ramsete.update(state, state_d)
-            print(
-                f"{round(self.timer.get(),3)}\t{round(self.ramsete.getError(),3)}"
-            )
-
+            print(f"{round(self.timer.get(),3)}\t{round(self.ramsete.getError(),3)}")
             self.chassis.setChassisState(velocity)
             return True
         else:
@@ -105,7 +105,7 @@ class Autonomous(AutonomousStateMachine):
             self.timer.reset()
             self.timer.start()
         if not self.followTrajectory():
-            self.next_state("loadingStationToLeftRocket")
+            self.next_state("stop")
 
     @state
     def loadingStationToLeftRocket(self, initial_call):

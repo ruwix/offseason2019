@@ -6,19 +6,18 @@ import wpilib
 
 from components.autoselector import AutoSelector
 from components.chassis import Chassis
-from controllers.ramsete import Ramsete
 from utils.lazytalonsrx import LazyTalonSRX
 
 
 class Robot(magicbot.MagicRobot):
     chassis: Chassis
     autoselector: AutoSelector
+
     VELOCITY_KP = 0.0
     VELOCITY_KI = 0.0
     VELOCITY_KD = 0.0
     VELOCITY_KF = 0.0
-    KBETA = 20.0
-    KZETA = 0.7
+    # TODO add differential drive object
 
     def createObjects(self):
         """Create motors and stuff here"""
@@ -43,8 +42,6 @@ class Robot(magicbot.MagicRobot):
 
         self.driver = wpilib.joystick.Joystick(0)
         self.operator = wpilib.joystick.Joystick(1)
-
-        self.ramsete = Ramsete(self.KBETA, self.KZETA)
 
     def teleopInit(self):
         """Called when teleop starts; optional"""
