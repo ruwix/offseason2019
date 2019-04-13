@@ -1,5 +1,8 @@
 import numpy as np
 
+cm_per_meter = 100
+meters_per_cm = 0.01
+
 inches_per_foot = 12
 feet_per_inch = 0.083333
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils.epsilon import EPSILON
+from utils.epsilon import EPSILON, epsilonEquals
 from utils.mathextension import lerp
 from utils.physicalstates import ChassisState
 
@@ -152,7 +152,7 @@ class Rotation:
         return Rotation(cos, sin, True)
 
     def __eq__(self, other):
-        return isinstance(other, self.__class__) and epislonEquals(
+        return isinstance(other, self.__class__) and epsilonEquals(
             self.theta(), other.theta()
         )
 
