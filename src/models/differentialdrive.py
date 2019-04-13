@@ -1,8 +1,5 @@
 """
 Implementation from:
-FRC Team 5190
-Green Hope Falcons;
-Who implemented from:
 NASA Ames Robotics "The Cheesy Poofs"
 Team 254
 """

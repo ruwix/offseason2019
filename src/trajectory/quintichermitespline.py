@@ -86,9 +86,6 @@ class QuinticHermiteSpline(HermiteSpline):
             if (prev - current) < QuinticHermiteSpline.MIN_DELTA:
                 return current
             prev = current
-        for s in splines:
-            for i in range(1000):
-                print(s.getPose(i / 1000))
         return prev
 
     @staticmethod

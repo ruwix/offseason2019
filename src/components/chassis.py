@@ -44,7 +44,7 @@ class Chassis:
         self.timestamp = 0
         self._last_timestamp = 0
 
-        self.state = Pose(1.7, -1.09, 0)
+        self.state = Pose()
 
         self._current_encoder_pos = 0
         self._last_encoder_pos = 0
