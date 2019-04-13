@@ -1,3 +1,8 @@
+"""
+Implementation from:
+NASA Ames Robotics "The Cheesy Poofs"
+Team 254
+"""
 import numpy as np
 from pyfrc.sim import get_user_renderer
 from wpilib import RobotBase
@@ -14,8 +19,8 @@ from utils.geometry import Pose, PoseWithCurvature, Vector, boundRadians
 class TrajectoryGenerator:
     def __init__(
         self,
-        max_dx: float = 0.05,
-        max_dy: float = 0.00635,
+        max_dx: float = 5 * units.meters_per_cm,
+        max_dy: float = 1 * units.meters_per_cm,
         max_dtheta: float = 5 * units.degrees_per_radian,
     ):
         self.max_dx = max_dx
@@ -32,18 +37,20 @@ class TrajectoryGenerator:
         max_acceleration: float,
         _reversed: bool = False,
     ) -> TimedTrajectory:
-        # Make theta normal for trajectory generation if path is trajectoryReversed.
+        # Make theta normal for trajectory generation if path is _reversed.
         if _reversed:
             for i in range(0, len(spline_poses)):
                 spline_poses[i].theta += np.pi
         splines = np.empty(len(spline_poses) - 1, dtype=QuinticHermiteSpline)
         for i in range(0, len(spline_poses) - 1):
             splines[i] = QuinticHermiteSpline(spline_poses[i], spline_poses[i + 1])
-        self._reversed = _reversed
-
-        d = self.getDistanceTrajectory(splines)
-        t = self.timeParameterizeTrajectory(
-            d,
+        trajectory_poses = self.getTrajectoryPosesFromSplines(splines)
+        if _reversed:
+            for i in range(0, len(trajectory_poses)):
+                trajectory_poses[i].theta -= np.pi
+        distance_trajectory = self.getDistanceTrajectory(trajectory_poses)
+        timed_trajectory = self.timeParameterizeTrajectory(
+            distance_trajectory,
             constraints,
             start_velocity,
             end_velocity,
@@ -52,17 +59,13 @@ class TrajectoryGenerator:
             self.max_dx,
             _reversed,
         )
-        return t
+        return timed_trajectory
 
     def getTrajectoryPosesFromSplines(self, splines: np.array) -> np.array:
         return parameterizeSplines(splines, self.max_dx, self.max_dy, self.max_dtheta)
 
-    def getDistanceTrajectory(self, splines: np.array) -> DistanceTrajectory:
-        t = self.getTrajectoryPosesFromSplines(splines)
-        if self._reversed:
-            for i in range(0, len(t)):
-                t[i].theta -= np.pi
-        return DistanceTrajectory(t)
+    def getDistanceTrajectory(self, trajectory_poses: np.array) -> DistanceTrajectory:
+        return DistanceTrajectory(trajectory_poses)
 
     def timeParameterizeTrajectory(
         self,
