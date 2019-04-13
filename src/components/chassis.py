@@ -8,13 +8,13 @@ import wpilib
 from networktables import NetworkTables
 
 from utils import units
-from utils.geometry import RobotState
 from utils.physicalstates import ChassisState
+from utils.geometry import Pose
 
 
 class Chassis:
-    drive_motor_left: ctre.WPI_TalonSRX
-    drive_motor_right: ctre.WPI_TalonSRX
+    dm_l: ctre.WPI_TalonSRX
+    dm_r: ctre.WPI_TalonSRX
     imu: ctre.PigeonIMU
 
     X_WHEELBASE: float = 24 * units.meters_per_inch
@@ -44,8 +44,7 @@ class Chassis:
         self.timestamp = 0
         self._last_timestamp = 0
 
-        self.state = RobotState(1.7, -1.09, 0, 0, 0)
-        self.last_state = self.state
+        self.state = Pose(1.7, -1.09, 0)
 
         self._current_encoder_pos = 0
         self._last_encoder_pos = 0
@@ -67,11 +66,6 @@ class Chassis:
         self.vl = int(vl * self.ENCODER_TICKS_PER_METER) / 10
         self.vr = int(vr * self.ENCODER_TICKS_PER_METER) / 10
 
-    def setPercentWheelVelocity(self, vl: float, vr: float) -> None:
-        self.mode = self._Mode.Velocity
-        self.vl = int(vl * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_METER / 10)
-        self.vr = int(vr * self.MAX_VELOCITY * self.ENCODER_TICKS_PER_METER / 10)
-
     def setChassisVelocity(self, v: float, omega: float) -> None:
         self.mode = self._Mode.Velocity
         vl = v + omega * self.X_WHEELBASE / 2.0
@@ -85,38 +79,35 @@ class Chassis:
     def setState(self, x, y, heading):
         self.state.x = x
         self.state.y = y
-        self.state.heading = heading
+        self.state.theta = heading
 
     def updateState(self, dt: float) -> None:
         self._current_encoder_pos = (
-            self.drive_motor_left.getSelectedSensorPosition(0)
-            + self.drive_motor_right.getSelectedSensorPosition(0)
+            self.dm_l.getSelectedSensorPosition(0)
+            + self.dm_r.getSelectedSensorPosition(0)
         ) / 2
         self._delta_encoder_pos = self._current_encoder_pos - self._last_encoder_pos
 
-        self.state.heading = np.deg2rad(self.imu.getYawPitchRoll()[0])
+        self.state.theta = np.deg2rad(self.imu.getYawPitchRoll()[0])
 
         self.state.x += (
-            np.cos(self.state.heading)
+            np.cos(self.state.theta)
             * self._delta_encoder_pos
             / self.ENCODER_TICKS_PER_METER
         )
         self.state.y += (
-            np.sin(self.state.heading)
+            np.sin(self.state.theta)
             * self._delta_encoder_pos
             / self.ENCODER_TICKS_PER_METER
         )
-        self.state.update(self.last_state, dt)
         self._last_encoder_pos = self._current_encoder_pos
-        self.last_state = deepcopy(self.state)
 
     def reset(self) -> None:
         self.vl = 0
         self.vr = 0
         self.timestamp = 0
         self._last_timestamp = 0
-        self.state = RobotState(0, 0, 0, 0, 0)
-        self.last_state = RobotState(0, 0, 0, 0, 0)
+        self.state = Pose()
 
         self._current_encoder_pos = 0
         self._last_encoder_pos = 0
@@ -133,20 +124,16 @@ class Chassis:
         dt = self.timestamp - self._last_timestamp
         self.updateState(dt)
         self.table.putNumberArray(
-            "Pose", np.array([self.state.x, self.state.y, self.state.heading])
+            "Pose", np.array([self.state.x, self.state.y, self.state.theta])
         )
 
         if self.mode == self._Mode.PercentOutput:
-            self.drive_motor_left.set(
-                ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vl
-            )
-            self.drive_motor_right.set(
-                ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vr
-            )
+            self.dm_l.set(ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vl)
+            self.dm_r.set(ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vr)
         elif self.mode == self._Mode.Velocity:
-            self.drive_motor_left.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vl)
-            self.drive_motor_right.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vr)
+            self.dm_l.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vl)
+            self.dm_r.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vr)
         elif self.mode == self._Mode.PercentVelocity:
-            self.drive_motor_left.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vl)
-            self.drive_motor_right.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vr)
+            self.dm_l.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vl)
+            self.dm_r.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vr)
         self._last_timestamp = self.timestamp

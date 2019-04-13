@@ -1,28 +1,33 @@
 import numpy as np
 
-from utils.geometry import RobotState, boundRadians
+from utils.geometry import Pose, boundRadians
 from utils.physicalstates import ChassisState
+from trajectory.timedtrajectory import TimedState
 
 
 class Ramsete:
     def __init__(self, kbeta: float, kzeta: float):
         self.kbeta = kbeta  # 0 < kbeta; larger kbeta makes convergence more aggresive
         self.kzeta = kzeta  # 0 < kzeta < 1; larger kbeta provides more damping
-        self.error = RobotState()
+        self.error = Pose()
 
-    def update(self, state: RobotState, state_d: RobotState) -> ChassisState:
+    def update(self, state: Pose, state_d: TimedState) -> ChassisState:
         # Compute errors
-        self.error = state_d.pose.inFrameOfReferenceOf(state.pose)
+        self.error = state_d.state.pose.inFrameOfReferenceOf(state)
+        self.error.theta = boundRadians(self.error.theta)
+        # Compute desired velocities
+        v_d = state_d.velocity
+        omega_d = state_d.state.curvature * v_d
         # Compute gains
-        k1 = 2 * self.kzeta * np.sqrt(state_d.omega ** 2 + self.kbeta * state_d.v ** 2)
+        k1 = 2 * self.kzeta * np.sqrt(omega_d ** 2 + self.kbeta * v_d ** 2)
         k2 = self.kbeta
         k3 = k1
         # Find linear velocity
-        v = state_d.v * np.cos(self.error.theta) + k1 * self.error.x
+        v = v_d * np.cos(self.error.theta) + k1 * self.error.x
         # Find angular velocity
         omega = (
-            state_d.omega
-            + k2 * state_d.v * np.sinc(self.error.theta) * self.error.y
+            omega_d
+            + k2 * v_d * np.sinc(self.error.theta) * self.error.y
             + k3 * self.error.theta
         )
         return ChassisState(v, omega)

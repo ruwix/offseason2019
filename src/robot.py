@@ -21,21 +21,21 @@ class Robot(magicbot.MagicRobot):
     KZETA = 0.7
 
     def createObjects(self):
-        np.set_printoptions(suppress=True)
         """Create motors and stuff here"""
-        self.drive_motor_left = LazyTalonSRX(1)
-        self.drive_motor_right = LazyTalonSRX(2)
+        np.set_printoptions(suppress=True)
+        self.dm_l = LazyTalonSRX(1)
+        self.dm_r = LazyTalonSRX(2)
 
-        self.drive_motor_left.initialize(
+        self.dm_l.initialize(
             inverted=False, encoder=True, phase=False, name="Drive Motor Left"
         )
-        self.drive_motor_right.initialize(
+        self.dm_r.initialize(
             inverted=False, encoder=True, phase=False, name="Drive Motor Right"
         )
-        self.drive_motor_left.setPIDF(
+        self.dm_l.setPIDF(
             0, self.VELOCITY_KP, self.VELOCITY_KI, self.VELOCITY_KD, self.VELOCITY_KF
         )
-        self.drive_motor_right.setPIDF(
+        self.dm_r.setPIDF(
             0, self.VELOCITY_KP, self.VELOCITY_KI, self.VELOCITY_KD, self.VELOCITY_KF
         )
 
@@ -62,7 +62,7 @@ class Robot(magicbot.MagicRobot):
             if np.abs(right) < np.abs(left) and 1 < np.abs(left):
                 left /= np.abs(left)
                 right /= np.abs(left)
-            self.chassis.setPercentWheelVelocity(left, right)
+            self.chassis.setWheelOutput(left, right)
             print(round(self.chassis.state, 3))
         except:
             self.onException()
