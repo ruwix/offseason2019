@@ -114,7 +114,7 @@ class DifferentialDrive:
     ) -> DriveDynamics:
         """Solve forward dynamics for torques and accelerations."""
         return self.solveForwardDynamics(
-            solveInverseKinematics(chassis_velocity),
+            self.solveInverseKinematics(chassis_velocity),
             chassis_velocity,
             (chassis_velocity.angular / chassis_velocity.linear),
             voltage,
@@ -197,9 +197,9 @@ class DifferentialDrive:
             chassis_acceleration.angular - chassis_acceleration.linear * curvature
         ) / (chassis_velocity.linear ** 2)
         return self.solveInverseDynamics(
-            solveInverseKinematics(chassis_velocity),
+            self.solveInverseKinematics(chassis_velocity),
             chassis_velocity,
-            solveInverseKinematics(chassis_acceleration),
+            self.solveInverseKinematics(chassis_acceleration),
             chassis_acceleration,
             curvature,
             dcurvature,
@@ -296,13 +296,13 @@ class DifferentialDrive:
         )
 
         if epsilonEquals(curvature, 0):
-            return self.wheel_radius * np.min(
+            return self.wheel_radius * np.min((
                 left_speed_at_max_moltage, right_speed_at_max_moltage
-            )
+            ))
 
         if np.isinf(curvature):
             # Turn in place. Return value meaning becomes angular velocity.
-            wheel_speed = np.min(left_speed_at_max_moltage, right_speed_at_max_moltage)
+            wheel_speed = np.min((left_speed_at_max_moltage, right_speed_at_max_moltage))
             return (
                 np.sign(curvature)
                 * self.wheel_radius
@@ -339,7 +339,7 @@ class DifferentialDrive:
     def getMinMaxAcceleration(
         self, chassis_velocity: ChassisState, curvature: float, max_abs_voltage: float
     ):
-        wheel_velocities = solveInverseKinematics()
+        wheel_velocities = self.solveInverseKinematics(chassis_velocity)
         min = np.Inf
         max = np.NINF
         # Math:
@@ -352,9 +352,9 @@ class DifferentialDrive:
             linear_term = 0.0
             angular_term = self.moi
         else:
-            linear_term = mass * self.effective_wheel_base_radius
+            linear_term = self.mass * self.effective_wheel_base_radius
             angular_term = self.moi * curvature
-        drag_torque = chassis_velocity.angular * angular_drag
+        drag_torque = chassis_velocity.angular * self.angular_drag
 
         # Check all four cases and record the min and max valid accelerations.
         for left in (False, True):
@@ -371,7 +371,7 @@ class DifferentialDrive:
                 variable_transmission = (
                     self.right_transmission if left else self.left_transmission
                 )
-                fixed_torque = fixedTransmission.getTorqueForVoltage(
+                fixed_torque = fixed_transmission.getTorqueFromVoltage(
                     fixed_wheel_velocity, sign * max_abs_voltage
                 )
 
@@ -405,6 +405,6 @@ class DifferentialDrive:
                         accel = (fixed_torque + variable_torque) / (
                             self.mass / self.moi
                         )
-                    min = np.min(min, accel)
-                    max = np.max(max, accel)
+                    min = np.min((min, accel))
+                    max = np.max((max, accel))
         return MinMax(min, max)

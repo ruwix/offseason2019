@@ -3,7 +3,7 @@ Implementation from:
 NASA Ames Robotics "The Cheesy Poofs"
 Team 254
 """
-from numpy import np
+import numpy as np
 
 from utils.epsilon import EPSILON
 
@@ -22,9 +22,9 @@ class DCMotorTransmission:
     def getFreeSpeedAtVoltage(self, voltage: float) -> float:
         """Returns the free speed of the motor at the specified voltage."""
         if voltage > EPSILON:
-            return np.max(0, voltage - self.friction_voltage) * self.speed_per_volt
+            return np.max((0, voltage - self.friction_voltage)) * self.speed_per_volt
         elif voltage < -EPSILON:
-            return np.min(0, voltage - self.friction_voltage) * self.speed_per_volt
+            return np.min((0, voltage - self.friction_voltage)) * self.speed_per_volt
         else:
             return 0
 
@@ -36,9 +36,9 @@ class DCMotorTransmission:
         elif output_speed < -EPSILON:  # Reverse motion, rolling friction.
             effective_voltage += self.friction_voltage
         elif voltage > EPSILON:  # System is static, forward torque.
-            effective_voltage = np.max(0, voltage - self.friction_voltage)
+            effective_voltage = np.max((0, voltage - self.friction_voltage))
         elif voltage < -EPSILON:  # System is static, reverse torque.
-            effective_voltage = np.min(0, voltage + self.friction_voltage)
+            effective_voltage = np.min((0, voltage + self.friction_voltage))
         else:
             return 0
         return self.torque_per_volt * (

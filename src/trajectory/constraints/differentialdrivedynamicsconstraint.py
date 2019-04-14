@@ -13,12 +13,12 @@ class DifferentialDriveDynamicsConstraint(TimingConstraint):
         self.max_voltage = max_voltage
 
     def getMaxVelocity(self, state: PoseWithCurvature) -> float:
-        return drive.getAbsMaxVelocity(state.curvature, self.max_voltage)
+        return self.drive.getMaxAbsVelocity(state.curvature, self.max_voltage)
 
     def getMinMaxAcceleration(
         self, state: PoseWithCurvature, velocity: float
     ) -> MinMax:
-        acceleration = drive.getMinMaxAcceleration(
+        return self.drive.getMinMaxAcceleration(
             ChassisState(velocity, velocity * state.curvature),
             state.curvature,
             self.max_voltage,
