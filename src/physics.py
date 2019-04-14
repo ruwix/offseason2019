@@ -33,13 +33,13 @@ config.config_obj["pyfrc"]["field"]["px_per_ft"] = (
 class DriveTrain:
     """A simplified drivetrain for robot simulation."""
 
-    def __init__(self, x_wheelbase: float):
-        self.x_wheelbase = x_wheelbase
+    def __init__(self, track_width: float):
+        self.track_width = track_width
 
     def getVelocities(self, vl: float, vr: float) -> np.array:
         """Get the linear/angular velocity of the robot given the wheel velocities."""
         v = (vl + vr) / 2
-        omega = (vl - vr) / self.x_wheelbase
+        omega = (vl - vr) / self.track_width
         return np.array([v, omega])
 
 
@@ -112,7 +112,7 @@ class PhysicsEngine:
     def __init__(self, controller):
 
         self.controller = PhysicsController(controller)
-        self.drivetrain = DriveTrain(Chassis.X_WHEELBASE)
+        self.drivetrain = DriveTrain(Chassis.TRACK_WIDTH)
         self.drive_left = SimulatedDriveTalonSRX(
             1, Chassis.MAX_VELOCITY, Chassis.ENCODER_TICKS_PER_METER
         )

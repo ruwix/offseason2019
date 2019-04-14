@@ -7,17 +7,27 @@ import wpilib
 from components.autoselector import AutoSelector
 from components.chassis import Chassis
 from utils.lazytalonsrx import LazyTalonSRX
+from models.differentialdrive import DifferentialDrive
+from models.dcmotortransmission import DCMotorTransmission
+
+from utils import units
 
 
 class Robot(magicbot.MagicRobot):
     chassis: Chassis
     autoselector: AutoSelector
 
-    VELOCITY_KP = 0.0
-    VELOCITY_KI = 0.0
-    VELOCITY_KD = 0.0
-    VELOCITY_KF = 0.0
-    # TODO add differential drive object
+    VELOCITY_KP: float = 0.0
+    VELOCITY_KI: float = 0.0
+    VELOCITY_KD: float = 0.0
+    VELOCITY_KF: float = 0.0
+
+    ROBOT_LINEAR_INERTIA: float = 60
+    ROBOT_ANGULAR_INERTIA: float = 80
+    ROBOT_ANGUALR_DRAG: float = 12
+    DRIVE_V_INTERCEPT: float = 1.055
+    DRIVE_KV: float = 0.135
+    DRIVE_KA: float = 0.012
 
     def createObjects(self):
         """Create motors and stuff here"""
@@ -42,6 +52,22 @@ class Robot(magicbot.MagicRobot):
 
         self.driver = wpilib.joystick.Joystick(0)
         self.operator = wpilib.joystick.Joystick(1)
+
+        self.transmission_l = DCMotorTransmission(
+            1 / self.DRIVE_KV,
+            Chassis.WHEEL_RADIUS ** 2 * self.ROBOT_LINEAR_INERTIA / (2 * self.DRIVE_KA),
+            self.DRIVE_V_INTERCEPT,
+        )
+        self.transmission_r = self.transmission_l
+        self.diff_drive = DifferentialDrive(
+            self.ROBOT_LINEAR_INERTIA,
+            self.ROBOT_ANGUALR_DRAG,
+            self.ROBOT_ANGUALR_DRAG,
+            Chassis.WHEEL_RADIUS,
+            Chassis.TRACK_RADIUS,
+            self.transmission_l,
+            self.transmission_r,
+        )
 
     def teleopInit(self):
         """Called when teleop starts; optional"""

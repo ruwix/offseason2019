@@ -10,21 +10,25 @@ from networktables import NetworkTables
 from utils import units
 from utils.physicalstates import ChassisState
 from utils.geometry import Pose
+from models.differentialdrive import DifferentialDrive
 
 
 class Chassis:
     dm_l: ctre.WPI_TalonSRX
     dm_r: ctre.WPI_TalonSRX
     imu: ctre.PigeonIMU
+    diff_drive: DifferentialDrive
 
-    X_WHEELBASE: float = 24 * units.meters_per_inch
-    Y_WHEELBASE: float = 24 * units.meters_per_inch
-
-    WHEEL_DIAMETER: float = 6 * units.meters_per_inch
-    WHEEL_CIRCUMFERENCE: float = np.pi * WHEEL_DIAMETER
+    TRACK_WIDTH: float = 24 * units.meters_per_inch
+    WHEELBASE: float = 24 * units.meters_per_inch
+    TRACK_RADIUS: float = TRACK_WIDTH / 2
 
     ENCODER_CPR: int = 4096
     ENCODER_GEAR_REDUCTION: int = 1
+
+    WHEEL_DIAMETER: float = 6 * units.meters_per_inch
+    WHEEL_RADIUS: float = WHEEL_DIAMETER / 2
+    WHEEL_CIRCUMFERENCE: float = np.pi * WHEEL_DIAMETER
 
     ENCODER_TICKS_PER_METER: float = ENCODER_CPR * ENCODER_GEAR_REDUCTION / WHEEL_CIRCUMFERENCE
     MAX_VELOCITY: float = 3
@@ -68,8 +72,8 @@ class Chassis:
 
     def setChassisVelocity(self, v: float, omega: float) -> None:
         self.mode = self._Mode.Velocity
-        vl = v + omega * self.X_WHEELBASE / 2.0
-        vr = v - omega * self.X_WHEELBASE / 2.0
+        vl = v + omega * self.TRACK_WIDTH / 2.0
+        vr = v - omega * self.TRACK_WIDTH / 2.0
         self.setWheelVelocity(vl, vr)
 
     def setChassisState(self, velocity: ChassisState) -> None:

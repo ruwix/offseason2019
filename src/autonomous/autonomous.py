@@ -12,9 +12,13 @@ from trajectory.constraints.angularaccelerationconstraint import (
 from trajectory.constraints.centripetalaccelerationconstraint import (
     CentripetalAccelerationConstraint,
 )
+from trajectory.constraints.differentialdrivedynamicsconstraint import (
+    DifferentialDriveDynamicsConstraint,
+)
 from trajectory.constraints.timingconstraint import TimingConstraint
 from trajectory.trajectorygenerator import TrajectoryGenerator
 from utils.physicalstates import ChassisState
+from models.differentialdrive import DifferentialDrive
 
 
 class Autonomous(AutonomousStateMachine):
@@ -24,7 +28,7 @@ class Autonomous(AutonomousStateMachine):
 
     chassis: Chassis
     autoselector: AutoSelector
-
+    diff_drive: DifferentialDrive
     KBETA = 2.0
     KZETA = 0.7
 
@@ -39,7 +43,7 @@ class Autonomous(AutonomousStateMachine):
             [
                 CentripetalAccelerationConstraint(5.0),
                 AngularAccelerationConstraint(4.0),
-                # TODO add drive dynamics constraints
+                DifferentialDriveDynamicsConstraint(self.diff_drive, 10),
             ],
             dtype=TimingConstraint,
         )
@@ -105,7 +109,7 @@ class Autonomous(AutonomousStateMachine):
             self.timer.reset()
             self.timer.start()
         if not self.followTrajectory():
-            self.next_state("stop")
+            self.next_state("loadingStationToLeftRocket")
 
     @state
     def loadingStationToLeftRocket(self, initial_call):
