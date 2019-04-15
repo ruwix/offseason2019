@@ -17,7 +17,7 @@ config.config_obj["pyfrc"]["robot"]["starting_x"] = (
 )
 config.config_obj["pyfrc"]["robot"]["starting_y"] = (
     config.config_obj["pyfrc"]["field"]["h_m"] / 2
-    + config.config_obj["pyfrc"]["robot"]["starting_y_m"]
+    - config.config_obj["pyfrc"]["robot"]["starting_y_m"]
 ) * units.feet_per_meter
 config.config_obj["pyfrc"]["field"]["w"] = int(
     config.config_obj["pyfrc"]["field"]["w_m"] * units.feet_per_meter
@@ -70,7 +70,9 @@ class PhysicsController:
         offset = self.controller.get_offset(
             x * units.feet_per_meter, y * units.feet_per_meter
         )
-        return np.array([offset[0] * units.meters_per_foot, np.deg2rad(offset[1])])
+        return np.array(
+            [offset[0] * units.meters_per_foot, offset[1] * units.radians_per_degree]
+        )
 
     def getPosition(self) -> np.array:
         """Get the position of the robot."""
@@ -130,7 +132,7 @@ class PhysicsEngine:
         hal_data["custom"]["Pose"] = np.round(self.pose, 2)
         hal_data["custom"]["Velocity"] = np.round((self.last_pose - self.pose) / dt, 2)
 
-        hal_data["robot"]["pigeon_device_3"] = np.rad2deg(self.pose[2])
+        hal_data["robot"]["pigeon_device_3"] = -self.pose[2] * units.degrees_per_radian
 
         self.drive_left.update(hal_data, dt)
         self.drive_right.update(hal_data, dt)

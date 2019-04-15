@@ -301,6 +301,7 @@ class TrajectoryGenerator:
 
             v = constrained_state.max_velocity
             s = constrained_state.distance
+
             timed_states[i] = TimedState(
                 constrained_state.state,
                 t,
@@ -314,7 +315,7 @@ class TrajectoryGenerator:
             points = np.empty((0, 2))
             for timed_state in timed_trajectory.timed_states:
                 state = timed_state.state
-                point = np.array([state.pose.x, state.pose.y + 4.1148]).reshape((1, 2))
+                point = np.array([state.pose.x, -state.pose.y + 4.1148]).reshape((1, 2))
                 points = np.append(points, point, axis=0)
             get_user_renderer().draw_line(
                 points,

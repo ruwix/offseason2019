@@ -5,6 +5,7 @@ from enum import Enum
 import numpy as np
 
 import paths
+from utils import units
 from utils.geometry import Pose
 
 
@@ -17,7 +18,7 @@ def loadPath(file: str) -> np.array:
         data = np.array(list(_reader)).astype(float)
         ret = np.empty(len(data), dtype=Pose)
         for i, pose in enumerate(data):
-            ret[i] = Pose(pose[0], pose[1], np.deg2rad(-pose[2]))
+            ret[i] = Pose(pose[0], pose[1], pose[2] * units.radians_per_degree)
         path.close()
         return ret
 
