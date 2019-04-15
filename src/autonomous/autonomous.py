@@ -6,6 +6,7 @@ from autonomous.paths import Path
 from components.autoselector import AutoMode, AutoSelector, AutoSide
 from components.chassis import Chassis
 from controllers.ramsete import Ramsete
+from models.differentialdrive import DifferentialDrive
 from trajectory.constraints.angularaccelerationconstraint import (
     AngularAccelerationConstraint,
 )
@@ -18,7 +19,6 @@ from trajectory.constraints.differentialdrivedynamicsconstraint import (
 from trajectory.constraints.timingconstraint import TimingConstraint
 from trajectory.trajectorygenerator import TrajectoryGenerator
 from utils.physicalstates import ChassisState
-from models.differentialdrive import DifferentialDrive
 
 
 class Autonomous(AutonomousStateMachine):
@@ -29,8 +29,18 @@ class Autonomous(AutonomousStateMachine):
     chassis: Chassis
     autoselector: AutoSelector
     diff_drive: DifferentialDrive
+
     KBETA = 2.0
     KZETA = 0.7
+
+    MAX_CENTRIPETAL_ACCELERATION: float = 5.0
+    MAX_ANGULAR_ACCELERATION: float = 4.0
+    MAX_VOLTAGE: float = 10
+
+    START_VELOCITY: float = 0
+    END_VELOCITY: float = 0
+    MAX_ACCELERATION: float = 1.2
+    MAX_VELOCITY: float = 3
 
     def __init__(self):
         self.timer = wpilib.Timer()
@@ -41,29 +51,32 @@ class Autonomous(AutonomousStateMachine):
     def getTrajectory(self, poses, _reversed=False):
         constraints = np.array(
             [
-                CentripetalAccelerationConstraint(5.0),
-                AngularAccelerationConstraint(4.0),
-                DifferentialDriveDynamicsConstraint(self.diff_drive, 10),
+                CentripetalAccelerationConstraint(self.MAX_CENTRIPETAL_ACCELERATION),
+                AngularAccelerationConstraint(self.MAX_ANGULAR_ACCELERATION),
+                DifferentialDriveDynamicsConstraint(self.diff_drive, self.MAX_VOLTAGE),
             ],
             dtype=TimingConstraint,
         )
         return self.tg.generateTrajectory(
             spline_poses=poses,
             constraints=constraints,
-            start_velocity=0,
-            end_velocity=0,
-            max_velocity=3,
-            max_acceleration=1.2,
+            start_velocity=self.START_VELOCITY,
+            end_velocity=self.END_VELOCITY,
+            max_velocity=self.MAX_VELOCITY,
+            max_acceleration=self.MAX_ACCELERATION,
             _reversed=_reversed,
         )
 
     @state(first=True)
     def initMode(self, initial_call):
-        side, mode = AutoSide.LEFT, AutoMode.ROCKET  # self.autoselector.getSelection()
+        side, mode = (
+            AutoSide.LEFT,
+            AutoMode.ROCKET,
+        )  # self.autoselector.getSelection()
 
         if side == AutoSide.LEFT:
-            self.chassis.setState(1.70, -1.09, 0)
-        if mode == 0:
+            self.chassis.setState(1.70, 1.09, 0)
+        if mode == AutoMode.CROSS_LINE:
             self.next_state("crossLine")
         elif side == AutoSide.LEFT and mode == AutoMode.ROCKET:
             self.next_state("leftStartToRocket")
@@ -77,15 +90,15 @@ class Autonomous(AutonomousStateMachine):
             state = self.chassis.state
             state_d = self.trajectory.getState(self.timer.get())
             velocity = self.ramsete.update(state, state_d)
-            print(f"{round(self.timer.get(),3)}\t{round(self.ramsete.getError(),3)}")
+            print(f"{round(self.timer.get(),3)}\t{round(self.ramsete.getError(),3) }")
             self.chassis.setChassisState(velocity)
             return True
         else:
             return False
 
-    @timed_state(duration=2, next_state="stop")
+    @timed_state(duration=2.0, next_state="stop")
     def crossLine(self, initial_call):
-        self.chassis.setChassisVelocity(36, 0)
+        self.chassis.setWheelOutput(0.4, 0.4)
 
     @state
     def leftStartToRocket(self, initial_call):

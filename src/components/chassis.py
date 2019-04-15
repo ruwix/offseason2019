@@ -1,4 +1,3 @@
-from copy import deepcopy
 from enum import Enum
 
 import ctre
@@ -7,10 +6,10 @@ import numpy as np
 import wpilib
 from networktables import NetworkTables
 
-from utils import units
-from utils.physicalstates import ChassisState
-from utils.geometry import Pose
 from models.differentialdrive import DifferentialDrive
+from utils import units
+from utils.geometry import Pose
+from utils.physicalstates import ChassisState
 
 
 class Chassis:
@@ -72,13 +71,24 @@ class Chassis:
 
     def setChassisVelocity(self, v: float, omega: float) -> None:
         self.mode = self._Mode.Velocity
-        vl = v + omega * self.TRACK_WIDTH / 2.0
-        vr = v - omega * self.TRACK_WIDTH / 2.0
-        self.setWheelVelocity(vl, vr)
+        self.setChassisState(ChassisState(v, omega))
 
     def setChassisState(self, velocity: ChassisState) -> None:
         self.mode = self._Mode.Velocity
-        self.setChassisVelocity(velocity.linear, velocity.angular)
+        wheel_state = self.diff_drive.solveInverseKinematics(velocity)
+        self.setWheelVelocity(
+            wheel_state.left * self.WHEEL_RADIUS, wheel_state.right * self.WHEEL_RADIUS
+        )
+
+    # def setChassisVelocity(self, v: float, omega: float) -> None:
+    #     self.mode = self._Mode.Velocity
+    #     vl = v - omega * self.TRACK_WIDTH / 2.0
+    #     vr = v + omega * self.TRACK_WIDTH / 2.0
+    #     self.setWheelVelocity(vl, vr)
+
+    # def setChassisState(self, velocity: ChassisState) -> None:
+    #     self.mode = self._Mode.Velocity
+    #     self.setChassisVelocity(velocity.linear, velocity.angular)
 
     def setState(self, x, y, heading):
         self.state.x = x
@@ -92,7 +102,7 @@ class Chassis:
         ) / 2
         self._delta_encoder_pos = self._current_encoder_pos - self._last_encoder_pos
 
-        self.state.theta = np.deg2rad(self.imu.getYawPitchRoll()[0])
+        self.state.theta = self.imu.getYaw()
 
         self.state.x += (
             np.cos(self.state.theta)
