@@ -1,8 +1,8 @@
 import numpy as np
 
+from trajectory.timedtrajectory import TimedState
 from utils.geometry import Pose, boundRadians
 from utils.physicalstates import ChassisState
-from trajectory.timedtrajectory import TimedState
 
 
 class Ramsete:

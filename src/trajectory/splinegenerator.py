@@ -7,8 +7,8 @@ import itertools
 
 import numpy as np
 
-from utils.geometry import Pose, PoseWithCurvature
-from utils.geometry import boundRadians
+from utils.geometry import Pose, PoseWithCurvature, boundRadians
+
 MIN_SAMPLE_SIZE = 1
 
 
