@@ -21,7 +21,7 @@ class DifferentialDrive:
         moi: float,
         angular_drag: float,
         wheel_radius: float,
-        effective_wheel_base_radius: float,
+        track_radius: float,
         left_transmission: DCMotorTransmission,
         right_transmission: DCMotorTransmission,
     ):
@@ -54,7 +54,7 @@ class DifferentialDrive:
         Effective kinematic wheelbase radius. Might be larger than theoretical to compensate for skid steer. Measure by
         turning the robot in place several times and figuring out what the equivalent wheel base radius is.
         """
-        self.effective_wheel_base_radius = effective_wheel_base_radius
+        self.track_radius = track_radius
 
         """ DC Motor transmission for both sides of the drivetrain."""
         self.left_transmission = left_transmission
@@ -69,7 +69,7 @@ class DifferentialDrive:
         angular = (
             self.wheel_radius
             * (wheel_motion.right - wheel_motion.left)
-            / (2.0 * self.effective_wheel_base_radius)
+            / (2.0 * self.track_radius)
         )
         return ChassisState(linear, angular)
 
@@ -79,12 +79,10 @@ class DifferentialDrive:
         Could be either acceleration or velocity.
         """
         left = (
-            chassis_motion.linear
-            - self.effective_wheel_base_radius * chassis_motion.angular
+            chassis_motion.linear - self.track_radius * chassis_motion.angular
         ) / self.wheel_radius
         right = (
-            chassis_motion.linear
-            + self.effective_wheel_base_radius * chassis_motion.angular
+            chassis_motion.linear + self.track_radius * chassis_motion.angular
         ) / self.wheel_radius
         return WheelState(left, right)
 
@@ -158,7 +156,7 @@ class DifferentialDrive:
             chassis_acceleration = ChassisState(
                 (wheel_torque.right + wheel_torque.left)
                 / (self.wheel_radius * self.mass),
-                self.effective_wheel_base_radius
+                self.track_radius
                 * (wheel_torque.right - wheel_torque.left)
                 / (self.wheel_radius * self.moi)
                 - chassis_velocity.angular * self.angular_drag / self.moi,
@@ -173,9 +171,9 @@ class DifferentialDrive:
             # Resolve chassis accelerations to each wheel.
             wheel_acceleration = WheelState(
                 chassis_acceleration.linear
-                - chassis_acceleration.angular * self.effective_wheel_base_radius,
+                - chassis_acceleration.angular * self.track_radius,
                 chassis_acceleration.linear
-                + chassis_acceleration.angular * self.effective_wheel_base_radius,
+                + chassis_acceleration.angular * self.track_radius,
             )
         return DriveDynamics(
             curvature,
@@ -244,23 +242,15 @@ class DifferentialDrive:
             / 2.0
             * (
                 chassis_acceleration.linear * self.mass
-                - chassis_acceleration.angular
-                * self.moi
-                / self.effective_wheel_base_radius
-                - chassis_velocity.angular
-                * self.angular_drag
-                / self.effective_wheel_base_radius
+                - chassis_acceleration.angular * self.moi / self.track_radius
+                - chassis_velocity.angular * self.angular_drag / self.track_radius
             ),
             self.wheel_radius
             / 2.0
             * (
                 chassis_acceleration.linear * self.mass
-                + chassis_acceleration.angular
-                * self.moi
-                / self.effective_wheel_base_radius
-                + chassis_velocity.angular
-                * self.angular_drag
-                / self.effective_wheel_base_radius
+                + chassis_acceleration.angular * self.moi / self.track_radius
+                + chassis_velocity.angular * self.angular_drag / self.track_radius
             ),
         )
         # Solve for input voltages
@@ -296,24 +286,23 @@ class DifferentialDrive:
         )
 
         if epsilonEquals(curvature, 0):
-            return self.wheel_radius * np.min((
-                left_speed_at_max_moltage, right_speed_at_max_moltage
-            ))
+            return self.wheel_radius * np.min(
+                (left_speed_at_max_moltage, right_speed_at_max_moltage)
+            )
 
         if np.isinf(curvature):
             # Turn in place. Return value meaning becomes angular velocity.
-            wheel_speed = np.min((left_speed_at_max_moltage, right_speed_at_max_moltage))
+            wheel_speed = np.min(
+                (left_speed_at_max_moltage, right_speed_at_max_moltage)
+            )
             return (
-                np.sign(curvature)
-                * self.wheel_radius
-                * wheel_speed
-                / self.effective_wheel_base_radius
+                np.sign(curvature) * self.wheel_radius * wheel_speed / self.track_radius
             )
 
         right_speed_if_left_max = (
             left_speed_at_max_moltage
-            * (self.effective_wheel_base_radius * curvature + 1.0)
-            / (1.0 - self.effective_wheel_base_radius * curvature)
+            * (self.track_radius * curvature + 1.0)
+            / (1.0 - self.track_radius * curvature)
         )
 
         if np.abs(right_speed_if_left_max) <= right_speed_at_max_moltage + EPSILON:
@@ -325,8 +314,8 @@ class DifferentialDrive:
             )
         left_speed_if_left_max = (
             right_speed_at_max_moltage
-            * (1.0 - self.effective_wheel_base_radius * curvature)
-            / (1.0 + self.effective_wheel_base_radius * curvature)
+            * (1.0 - self.track_radius * curvature)
+            / (1.0 + self.track_radius * curvature)
         )
 
         # Right at max is active constraint.
@@ -352,7 +341,7 @@ class DifferentialDrive:
             linear_term = 0.0
             angular_term = self.moi
         else:
-            linear_term = self.mass * self.effective_wheel_base_radius
+            linear_term = self.mass * self.track_radius
             angular_term = self.moi * curvature
         drag_torque = chassis_velocity.angular * self.angular_drag
 
@@ -397,7 +386,7 @@ class DifferentialDrive:
                         accel = (
                             sign
                             * (fixed_torque - variable_torque)
-                            * self.effective_wheel_base_radius
+                            * self.track_radius
                             / (self.moi * self.wheel_radius)
                             - drag_torque / self.moi
                         )

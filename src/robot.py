@@ -6,11 +6,11 @@ import wpilib
 
 from components.autoselector import AutoSelector
 from components.chassis import Chassis
-from utils.lazytalonsrx import LazyTalonSRX
-from models.differentialdrive import DifferentialDrive
 from models.dcmotortransmission import DCMotorTransmission
-
+from models.differentialdrive import DifferentialDrive
 from utils import units
+from utils.lazypigeonimu import LazyPigeonIMU
+from utils.lazytalonsrx import LazyTalonSRX
 
 
 class Robot(magicbot.MagicRobot):
@@ -48,7 +48,7 @@ class Robot(magicbot.MagicRobot):
             0, self.VELOCITY_KP, self.VELOCITY_KI, self.VELOCITY_KD, self.VELOCITY_KF
         )
 
-        self.imu = ctre.PigeonIMU(3)
+        self.imu = LazyPigeonIMU(3)
 
         self.driver = wpilib.joystick.Joystick(0)
         self.operator = wpilib.joystick.Joystick(1)
