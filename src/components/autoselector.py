@@ -9,9 +9,12 @@ class AutoSide(Enum):
 
 class AutoMode(Enum):
     CROSS_LINE = 0
-    ROCKET = 1
-    BAY = 2
-    NOTHING = 3
+    FRONT_ROCKET = 1
+    SIDE_ROCKET = 2
+    BACK_ROCKET = 3
+
+    BAY = 4
+    NOTHING = 5
 
 
 class AutoSelector:

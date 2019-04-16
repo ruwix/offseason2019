@@ -24,9 +24,17 @@ def loadPath(file: str) -> np.array:
 
 
 class Path(Enum):
-    START_2_LEFT_ROCKET = "start2leftrocket.csv"
-    LEFT_ROCKET_2_LOADING_STATION = "leftrocket2loadingstation.csv"
-    LOADING_STATION_2_LEFT_ROCKET = "loadingstation2leftrocket.csv"
+    START_2_BACK_ROCKET = "start2backrocket.csv"
+    BACK_ROCKET_2_LOADING_STATION = "backrocket2loadingstation.csv"
+    LOADING_STATION_2_BACK_ROCKET = "loadingstation2backrocket.csv"
+    START_2_FRONT_ROCKET = "start2frontrocket.csv"
+    FRONT_ROCKET_2_LOADING_STATION = "frontrocket2loadingstation.csv"
+    LOADING_STATION_2_FRONT_ROCKET = "loadingstation2frontrocket.csv"
 
-    def getPoses(self):
-        return loadPath(self.value)
+    def getPoses(self, mirrored: bool = False):
+        ret = loadPath(self.value)
+        if mirrored:
+            for i in range(len(ret)):
+                ret[i].y *= -1
+                ret[i].theta *= -1
+        return ret
