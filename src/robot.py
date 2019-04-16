@@ -4,18 +4,20 @@ import magicbot
 import numpy as np
 import wpilib
 
-from components.autoselector import AutoSelector
 from components.chassis import Chassis
 from models.dcmotortransmission import DCMotorTransmission
 from models.differentialdrive import DifferentialDrive
 from utils import units
 from utils.lazypigeonimu import LazyPigeonIMU
 from utils.lazytalonsrx import LazyTalonSRX
+from components.localization import Localization
+from components.autoselector import AutoSelector
 
 
 class Robot(magicbot.MagicRobot):
     chassis: Chassis
     autoselector: AutoSelector
+    localization: Localization
 
     VELOCITY_KP: float = 0.0
     VELOCITY_KI: float = 0.0

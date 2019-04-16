@@ -20,7 +20,7 @@ from trajectory.constraints.timingconstraint import TimingConstraint
 from trajectory.trajectorygenerator import TrajectoryGenerator
 from utils.physicalstates import ChassisState
 from utils import units
-
+from components.localization import Localization
 
 class Autonomous(AutonomousStateMachine):
 
@@ -30,6 +30,7 @@ class Autonomous(AutonomousStateMachine):
     chassis: Chassis
     autoselector: AutoSelector
     diff_drive: DifferentialDrive
+    localization: Localization
 
     KBETA = 2.0
     KZETA = 0.7
@@ -40,8 +41,8 @@ class Autonomous(AutonomousStateMachine):
 
     START_VELOCITY: float = 0
     END_VELOCITY: float = 0
-    MAX_ACCELERATION: float = 3
-    MAX_VELOCITY: float = 1.2
+    MAX_VELOCITY: float = 3.0
+    MAX_ACCELERATION: float = 1.2
 
     def __init__(self):
         self.timer = wpilib.Timer()
@@ -76,7 +77,7 @@ class Autonomous(AutonomousStateMachine):
         )  # self.autoselector.getSelection()
 
         if side == AutoSide.LEFT:
-            self.chassis.setState(1.70, 1.09, 0)
+            self.localization.setState(1.70, 1.09, 0)
         if mode == AutoMode.CROSS_LINE:
             self.next_state("crossLine")
         elif side == AutoSide.LEFT and mode == AutoMode.ROCKET:
@@ -88,7 +89,7 @@ class Autonomous(AutonomousStateMachine):
         if self.trajectory == None:
             return False
         if self.timer.get() < self.trajectory.length:
-            state = self.chassis.state
+            state = self.localization.state
             state_d = self.trajectory.getState(self.timer.get())
             velocity = self.ramsete.update(state, state_d)
             print(f"{round(self.timer.get(),3)}\t{round(self.ramsete.getError(),3) }")
