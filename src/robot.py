@@ -23,6 +23,8 @@ class Robot(magicbot.MagicRobot):
     VELOCITY_KI: float = 0.0
     VELOCITY_KD: float = 0.0
     VELOCITY_KF: float = 0.0
+    MM_ACCEL = 1.0
+    MM_VEL = 2.0
 
     ROBOT_LINEAR_INERTIA: float = 60
     ROBOT_ANGULAR_INERTIA: float = 80
@@ -49,6 +51,9 @@ class Robot(magicbot.MagicRobot):
         self.dm_r.setPIDF(
             0, self.VELOCITY_KP, self.VELOCITY_KI, self.VELOCITY_KD, self.VELOCITY_KF
         )
+
+        self.dm_l.setMotionMagicConfig(self.MM_VEL, self.MM_ACCEL)
+        self.dm_r.setMotionMagicConfig(self.MM_VEL, self.MM_ACCEL)
 
         self.imu = LazyPigeonIMU(3)
 
