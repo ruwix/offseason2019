@@ -1,10 +1,11 @@
-from components.chassis import Chassis
 import ctre
+import numpy as np
 import wpilib
 from networktables import NetworkTables
-from utils.geometry import Pose
+
+from components.chassis import Chassis
 from models.differentialdrive import DifferentialDrive
-import numpy as np
+from utils.geometry import Pose
 
 
 class Localization:

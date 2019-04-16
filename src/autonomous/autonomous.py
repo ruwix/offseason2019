@@ -5,6 +5,7 @@ from magicbot import AutonomousStateMachine, state, timed_state
 from autonomous.paths import Path
 from components.autoselector import AutoMode, AutoSelector, AutoSide
 from components.chassis import Chassis
+from components.localization import Localization
 from controllers.ramsete import Ramsete
 from models.differentialdrive import DifferentialDrive
 from trajectory.constraints.angularaccelerationconstraint import (
@@ -18,9 +19,9 @@ from trajectory.constraints.differentialdrivedynamicsconstraint import (
 )
 from trajectory.constraints.timingconstraint import TimingConstraint
 from trajectory.trajectorygenerator import TrajectoryGenerator
-from utils.physicalstates import ChassisState
 from utils import units
-from components.localization import Localization
+from utils.physicalstates import ChassisState
+
 
 class Autonomous(AutonomousStateMachine):
 
