@@ -78,7 +78,7 @@ class PhysicsController:
         """Get the position of the robot."""
         pos = self.controller.get_position()
         return np.array(
-            [pos[0] * units.meters_per_foot, pos[1] * units.meters_per_foot, pos[2]]
+            [pos[0] * units.meters_per_foot, -pos[1] * units.meters_per_foot, pos[2]]
         )
 
 

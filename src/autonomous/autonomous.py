@@ -19,6 +19,7 @@ from trajectory.constraints.differentialdrivedynamicsconstraint import (
 from trajectory.constraints.timingconstraint import TimingConstraint
 from trajectory.trajectorygenerator import TrajectoryGenerator
 from utils.physicalstates import ChassisState
+from utils import units
 
 
 class Autonomous(AutonomousStateMachine):
@@ -33,14 +34,14 @@ class Autonomous(AutonomousStateMachine):
     KBETA = 2.0
     KZETA = 0.7
 
-    MAX_CENTRIPETAL_ACCELERATION: float = 5.0
-    MAX_ANGULAR_ACCELERATION: float = 4.0
+    MAX_CENTRIPETAL_ACCELERATION: float = 2.4
+    MAX_ANGULAR_ACCELERATION: float = 6.0
     MAX_VOLTAGE: float = 10
 
     START_VELOCITY: float = 0
     END_VELOCITY: float = 0
-    MAX_ACCELERATION: float = 1.2
-    MAX_VELOCITY: float = 3
+    MAX_ACCELERATION: float = 3
+    MAX_VELOCITY: float = 1.2
 
     def __init__(self):
         self.timer = wpilib.Timer()
