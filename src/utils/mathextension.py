@@ -12,3 +12,12 @@ class MinMax:
 
     def isValid(self) -> None:
         return self.min <= self.max
+
+
+def getAngleDiff(a, b):
+    diff = np.fmod(a - b, 2 * np.pi)
+    if diff >= np.pi:
+        diff -= 2 * np.pi
+    elif diff < -np.pi:
+        diff += 2 * np.pi
+    return diff

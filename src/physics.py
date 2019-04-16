@@ -99,6 +99,18 @@ class SimulatedDriveTalonSRX:
             velocity = talon["value"] * self.max_velocity
         elif talon["control_mode"] == ControlMode.Velocity:
             velocity = talon["pid0_target"] / self.ticks_per_meter * 10
+        elif talon["control_mode"] == ControlMode.MotionMagic:
+            error = talon["quad_position"] - talon["motionmagic_target"]
+            if abs(error) < 1:
+                velocity = 0
+            if abs(error) < 10:
+                velocity = 0.01* -np.sign(error)
+            elif abs(error) < 300:
+                velocity = 0.2 * -np.sign(error)
+            else:
+                velocity = 1 * -np.sign(error)
+        else:
+            velocity = 0
         return velocity
 
     def update(self, hal_data: dict, dt: float) -> None:

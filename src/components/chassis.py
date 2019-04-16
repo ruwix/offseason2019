@@ -10,6 +10,7 @@ from models.differentialdrive import DifferentialDrive
 from utils import units
 from utils.geometry import Pose
 from utils.physicalstates import ChassisState
+from utils.mathextension import getAngleDiff
 
 
 class Chassis:
@@ -35,35 +36,58 @@ class Chassis:
     class _Mode(Enum):
         PercentOutput = 0
         Velocity = 1
+        Position = 2
 
     def __init__(self):
-        self.vl = 0
-        self.vr = 0
+        self.sl = 0
+        self.sr = 0
+        self.heading = 0
         self.mode = self._Mode.PercentOutput
 
-    def setWheelOutput(self, vl: float, vr: float) -> None:
+    def setWheelOutput(self, sl: float, sr: float) -> None:
         self.mode = self._Mode.PercentOutput
-        self.vl = vl
-        self.vr = vr
+        self.sl = sl
+        self.sr = sr
 
-    def setWheelVelocity(self, vl: float, vr: float) -> None:
+    def setWheelVelocity(self, sl: float, sr: float) -> None:
         self.mode = self._Mode.Velocity
-        self.vl = int(vl * self.ENCODER_TICKS_PER_METER) / 10
-        self.vr = int(vr * self.ENCODER_TICKS_PER_METER) / 10
+        self.sl = int(sl * self.ENCODER_TICKS_PER_METER) / 10
+        self.sr = int(sr * self.ENCODER_TICKS_PER_METER) / 10
 
     def setChassisVelocity(self, v: float, omega: float) -> None:
         self.setChassisState(ChassisState(v, omega))
 
     def setChassisState(self, velocity: ChassisState) -> None:
-        self.mode = self._Mode.Velocity
         wheel_state = self.diff_drive.solveInverseKinematics(velocity)
         self.setWheelVelocity(
             wheel_state.left * self.WHEEL_RADIUS, wheel_state.right * self.WHEEL_RADIUS
         )
 
+    def setWheelPosition(self, sl: float, sr: float):
+        self.mode = self._Mode.Position
+        self.sl = sl * self.ENCODER_TICKS_PER_METER
+        self.sr = sr * self.ENCODER_TICKS_PER_METER
+
+    def setHeading(self, heading: float):
+        self.heading = heading
+        error = self.TRACK_RADIUS * (getAngleDiff(self.imu.getYaw(), heading))
+        sl = self.dm_l.getPosition() / self.ENCODER_TICKS_PER_METER + error
+        sr = self.dm_r.getPosition() / self.ENCODER_TICKS_PER_METER - error
+        self.setWheelPosition(sl, sr)
+
+    def isAtHeading(self):
+        print(abs(getAngleDiff(self.imu.getYaw(), self.heading)) * units.degrees_per_radian)
+        return (
+            self.mode == self._Mode.Position
+            and abs(getAngleDiff(self.imu.getYaw(), self.heading))
+            < 5 * units.radians_per_degree
+        )
+
     def reset(self) -> None:
-        self.vl = 0
-        self.vr = 0
+        self.sl = 0
+        self.sr = 0
+        self.heading = 0
+        self.mode = self._Mode.PercentOutput
 
     def on_enable(self):
         """Called when the robot enters teleop or autonomous mode"""
@@ -71,11 +95,11 @@ class Chassis:
     def execute(self):
         """Called periodically"""
         if self.mode == self._Mode.PercentOutput:
-            self.dm_l.set(ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vl)
-            self.dm_r.set(ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.vr)
+            self.dm_l.set(ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.sl)
+            self.dm_r.set(ctre.WPI_TalonSRX.ControlMode.PercentOutput, self.sr)
         elif self.mode == self._Mode.Velocity:
-            self.dm_l.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vl)
-            self.dm_r.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vr)
-        elif self.mode == self._Mode.PercentVelocity:
-            self.dm_l.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vl)
-            self.dm_r.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.vr)
+            self.dm_l.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.sl)
+            self.dm_r.set(ctre.WPI_TalonSRX.ControlMode.Velocity, self.sr)
+        elif self.mode == self._Mode.Position:
+            self.dm_l.set(ctre.WPI_TalonSRX.ControlMode.MotionMagic, self.sl)
+            self.dm_r.set(ctre.WPI_TalonSRX.ControlMode.MotionMagic, self.sr)
