@@ -104,7 +104,7 @@ class SimulatedDriveTalonSRX:
             if abs(error) < 1:
                 velocity = 0
             if abs(error) < 10:
-                velocity = 0.01* -np.sign(error)
+                velocity = 0.05 * -np.sign(error)
             elif abs(error) < 300:
                 velocity = 0.2 * -np.sign(error)
             else:
