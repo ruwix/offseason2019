@@ -36,14 +36,14 @@ class Autonomous(AutonomousStateMachine):
     KBETA = 2.0
     KZETA = 0.7
 
-    MAX_CENTRIPETAL_ACCELERATION: float = 2.4
-    MAX_ANGULAR_ACCELERATION: float = 6.0
-    MAX_VOLTAGE: float = 10
+    MAX_CENTRIPETAL_ACCELERATION: float = 2.4  # m/s^2
+    MAX_ANGULAR_ACCELERATION: float = 6.0  # rad/s^2
+    MAX_VOLTAGE: float = 10  # V
 
-    START_VELOCITY: float = 0
-    END_VELOCITY: float = 0
-    MAX_VELOCITY: float = 3.0
-    MAX_ACCELERATION: float = 1.2
+    START_VELOCITY: float = 0  # m/s
+    END_VELOCITY: float = 0  # m/s
+    MAX_VELOCITY: float = 3.0  # m/s
+    MAX_ACCELERATION: float = 1.2  # m/s^2
 
     def __init__(self):
         self.timer = wpilib.Timer()
@@ -75,7 +75,7 @@ class Autonomous(AutonomousStateMachine):
     def initMode(self, initial_call):
         side, mode = (
             AutoSide.LEFT,
-            AutoMode.FRONT_ROCKET,
+            AutoMode.BACK_ROCKET,
         )  # self.autoselector.getSelection()
 
         if side == AutoSide.LEFT:
@@ -100,7 +100,7 @@ class Autonomous(AutonomousStateMachine):
             state = self.localization.state
             state_d = self.trajectory.getState(self.timer.get())
             velocity = self.ramsete.update(state, state_d)
-            print(f"{round(self.timer.get(),3)}\t{round(self.ramsete.getError(),3) }")
+            print(round(self.ramsete.getError(),3))
             self.chassis.setChassisState(velocity)
             return True
         else:

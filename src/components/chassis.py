@@ -19,19 +19,20 @@ class Chassis:
     imu: ctre.PigeonIMU
     diff_drive: DifferentialDrive
 
-    TRACK_WIDTH: float = 24 * units.meters_per_inch
-    WHEELBASE: float = 24 * units.meters_per_inch
-    TRACK_RADIUS: float = TRACK_WIDTH / 2
+    TRACK_WIDTH: float = 24 * units.meters_per_inch  # m
+    WHEELBASE: float = 24 * units.meters_per_inch  # m
+    TRACK_RADIUS: float = TRACK_WIDTH / 2  # m
 
-    ENCODER_CPR: int = 4096
+    ENCODER_CPR: int = 4096  # native units / revolution
     ENCODER_GEAR_REDUCTION: int = 1
 
-    WHEEL_DIAMETER: float = 6 * units.meters_per_inch
-    WHEEL_RADIUS: float = WHEEL_DIAMETER / 2
+    WHEEL_DIAMETER: float = 6 * units.meters_per_inch  # m
+    WHEEL_RADIUS: float = WHEEL_DIAMETER / 2  # m
     WHEEL_CIRCUMFERENCE: float = np.pi * WHEEL_DIAMETER
 
-    ENCODER_TICKS_PER_METER: float = ENCODER_CPR * ENCODER_GEAR_REDUCTION / WHEEL_CIRCUMFERENCE
-    MAX_VELOCITY: float = 3
+    ENCODER_TICKS_PER_METER: float = ENCODER_CPR * ENCODER_GEAR_REDUCTION / WHEEL_CIRCUMFERENCE  # native units / m
+
+    MAX_VELOCITY: float = 3  # m / s
 
     class _Mode(Enum):
         PercentOutput = 0
@@ -76,7 +77,6 @@ class Chassis:
         self.setWheelPosition(sl, sr)
 
     def isAtHeading(self):
-        print(abs(getAngleDiff(self.imu.getYaw(), self.heading)) * units.degrees_per_radian)
         return (
             self.mode == self._Mode.Position
             and abs(getAngleDiff(self.imu.getYaw(), self.heading))

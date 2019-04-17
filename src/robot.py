@@ -23,15 +23,15 @@ class Robot(magicbot.MagicRobot):
     VELOCITY_KI: float = 0.0
     VELOCITY_KD: float = 0.0
     VELOCITY_KF: float = 0.0
-    MM_ACCEL = 1.0
-    MM_VEL = 2.0
+    MM_VEL = 2.0  # m/s
+    MM_ACCEL = 1.0  # m/s^2
 
-    ROBOT_LINEAR_INERTIA: float = 60
-    ROBOT_ANGULAR_INERTIA: float = 80
+    ROBOT_LINEAR_INERTIA: float = 60  # kg
+    ROBOT_ANGULAR_INERTIA: float = 80  # kg * m^2
     ROBOT_ANGUALR_DRAG: float = 12
-    DRIVE_V_INTERCEPT: float = 1.055
-    DRIVE_KV: float = 0.135
-    DRIVE_KA: float = 0.012
+    DRIVE_V_INTERCEPT: float = 1.055  # V
+    DRIVE_KV: float = 0.135  # V / (m/s)
+    DRIVE_KA: float = 0.012  # V / (m/s^2)
 
     def createObjects(self):
         """Create motors and stuff here"""
@@ -93,7 +93,7 @@ class Robot(magicbot.MagicRobot):
                 left /= np.abs(left)
                 right /= np.abs(left)
             self.chassis.setWheelOutput(left, right)
-            print(round(self.chassis.state, 3))
+            print(round(self.localization.state, 3))
         except:
             self.onException()
 
