@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils.epsilon import epsilonEquals
+from utils.mathextension import epsilonEquals
 from utils.geometry import PoseWithCurvature
 
 

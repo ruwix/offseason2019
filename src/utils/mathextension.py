@@ -1,5 +1,11 @@
 import numpy as np
 
+EPSILON = 1e-9
+
+
+def epsilonEquals(a: float, b: float, epsilon: float = EPSILON) -> float:
+    return abs(a - b) < epsilon
+
 
 def lerp(a: float, b: float, t: float) -> float:
     return a + (b - a) * np.clip(t, 0, 1)
@@ -21,3 +27,4 @@ def getAngleDiff(a, b):
     elif diff < -np.pi:
         diff += 2 * np.pi
     return diff
+

@@ -5,7 +5,7 @@ Team 254
 """
 import numpy as np
 
-from utils.epsilon import EPSILON
+from utils.mathextension import EPSILON
 
 
 class DCMotorTransmission:

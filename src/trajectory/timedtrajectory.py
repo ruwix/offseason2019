@@ -1,8 +1,7 @@
 import numpy as np
 
-from utils.epsilon import epsilonEquals
 from utils.geometry import PoseWithCurvature
-from utils.mathextension import lerp
+from utils.mathextension import lerp, epsilonEquals
 
 
 class TimedState:

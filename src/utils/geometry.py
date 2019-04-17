@@ -1,7 +1,6 @@
 import numpy as np
 
-from utils.epsilon import EPSILON, epsilonEquals
-from utils.mathextension import lerp
+from utils.mathextension import lerp, EPSILON, epsilonEquals
 from utils.physicalstates import ChassisState
 
 
@@ -43,7 +42,7 @@ class Vector:
         y = (self.x * st) + (self.y * ct)
         return Vector(x, y)
 
-    def lerp(self, other, t):
+    def interpolate(self, other, t):
         return Vector(lerp(self.x, other.x, t), lerp(self.y, other.y, t))
 
     def __eq__(self, other):
@@ -218,20 +217,6 @@ class Pose:
         angle = boundRadians(np.arctan2(diff.y, diff.x))
         theta = boundRadians(self.theta)
         return abs(angle - theta) < 0.001 or abs(angle - theta + np.pi) < 0.001
-
-    def applyTwist(self, twist, dt):
-        dsin = np.sin(twist.dtheta * dt) / twist.dtheta
-        dcos = (np.cos(twist.dtheta * dt) - 1.0) / twist.dtheta
-        sin = np.sin(self.theta)
-        cos = np.cos(self.theta)
-        dpose = Pose(
-            twist.dx * dsin + twist.dy * dcos,
-            twist.dx * -dcos + twist.dy * dsin,
-            twist.dtheta * dt,
-        )
-        self.x += dpose.x * cos - dpose.y * sin
-        self.y += dpose.x * sin - dpose.y * cos
-        self.theta += dpose.theta
 
     def getTwist(self):
         dtheta = self.theta
@@ -470,20 +455,6 @@ class Twist:
         self.dy = dy
         self.dtheta = dtheta
 
-    def applyTwist(self, twist, dt):
-        dsin = np.sin(twist.dtheta * dt) / twist.dtheta
-        dcos = (np.cos(twist.dtheta * dt) - 1.0) / twist.dtheta
-        sin = np.sin(self.dtheta)
-        cos = np.cos(self.dtheta)
-        dpose = Twist(
-            twist.dx * dsin + twist.dy * dcos,
-            twist.dx * -dcos + twist.dy * dsin,
-            twist.dtheta * dt,
-        )
-        self.dx += dpose.dx * cos - dpose.dy * sin
-        self.dy += dpose.dx * sin - dpose.dy * cos
-        self.dtheta += dpose.dtheta
-
     def asPose(self):
         sin_theta = np.sin(self.dtheta)
         cos_theta = np.cos(self.dtheta)
@@ -494,13 +465,6 @@ class Twist:
             s = sin_theta / self.dtheta
             c = (1 - cos_theta) / self.dtheta
         return Pose(self.dx * s - self.dy * c, self.dx * c + self.dy * s, self.dtheta)
-
-    def lerp(self, other, t):
-        return Pose(
-            lerp(self.dx, other.dx, t),
-            lerp(self.dy, other.dy, t),
-            lerp(self.dtheta, other.dtheta, t),
-        )
 
     def __eq__(self, other):
         return (

@@ -6,8 +6,7 @@ Team 254
 import numpy as np
 
 from models.dcmotortransmission import DCMotorTransmission
-from utils.epsilon import EPSILON, epsilonEquals
-from utils.mathextension import MinMax
+from utils.mathextension import MinMax, EPSILON, epsilonEquals
 from utils.physicalstates import ChassisState, DriveDynamics, WheelState
 
 
