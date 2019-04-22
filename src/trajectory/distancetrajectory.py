@@ -1,7 +1,7 @@
 import numpy as np
 
-from utils.mathextension import epsilonEquals
 from utils.geometry import PoseWithCurvature
+from utils.mathextension import epsilonEquals
 
 
 class DistanceTrajectory:

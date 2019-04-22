@@ -42,7 +42,7 @@ class Localization:
         dheading = cur_heading - self.last_heading
 
         self.state += Twist(dx, 0, dheading).asPose()
-        
+
         self.last_left_encoder = cur_left_encoder
         self.last_right_encoder = cur_right_encoder
         self.last_heading = cur_heading

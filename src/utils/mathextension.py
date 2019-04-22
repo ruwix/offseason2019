@@ -27,4 +27,3 @@ def getAngleDiff(a, b):
     elif diff < -np.pi:
         diff += 2 * np.pi
     return diff
-

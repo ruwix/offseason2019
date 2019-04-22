@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils.mathextension import lerp, EPSILON, epsilonEquals
+from utils.mathextension import EPSILON, epsilonEquals, lerp
 from utils.physicalstates import ChassisState
 
 

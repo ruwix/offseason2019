@@ -31,6 +31,3 @@ class Ramsete:
             + k3 * self.error.theta
         )
         return ChassisState(v, omega)
-
-    def getError(self):
-        return self.error
