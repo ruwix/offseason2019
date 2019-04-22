@@ -9,6 +9,7 @@ class LazyTalonSRX(ctre.WPI_TalonSRX):
 
     MotorDash = NetworkTables.getTable("SmartDashboard").getSubTable("TalonSRX")
     ControlMode = ctre.WPI_TalonSRX.ControlMode
+    DemandType = ctre.WPI_TalonSRX.DemandType
 
     def __init__(self, id: int):
         super().__init__(id)
@@ -45,20 +46,22 @@ class LazyTalonSRX(ctre.WPI_TalonSRX):
         self.configMotionAcceleration(int(accel), 0)
         self.configMotionCruiseVelocity(int(vel), 0)
 
-    def setPercentOutput(self, signal: float, max_signal: float = 1) -> None:
+    def setOutput(self, signal: float, max_signal: float = 1) -> None:
         """Set the percent output of the motor."""
         signal = min(max(signal, -max_signal), max_signal)
         self.set(self.ControlMode.PercentOutput, signal)
 
-    def setPositionSetpoint(self, pos: float) -> None:
+    def setPosition(self, pos: float) -> None:
         """Set the position of the motor."""
         self.set(self.ControlMode.Position, pos)
 
-    def setVelocitySetpoint(self, vel: float) -> None:
+    def setVelocity(self, vel: float, ff: float = 0) -> None:
         """Set the velocity of the motor."""
-        self.set(self.ControlMode.Velocity, vel)
+        self.set(
+            self.ControlMode.Velocity, vel, self.DemandType.ArbitraryFeedForward, ff
+        )
 
-    def setMotionMagicSetpoint(self, pos: float) -> None:
+    def setMotionMagicPosition(self, pos: float) -> None:
         """Set the position of the motor using motion magic."""
         self.set(self.ControlMode.MotionMagic, pos)
 
