@@ -7,6 +7,8 @@ import wpilib
 from components.autoselector import AutoSelector
 from components.chassis import Chassis
 from components.localization import Localization
+from components.trajectorytracker import TrajectoryTracker
+from controllers.ramsete import Ramsete
 from models.dcmotortransmission import DCMotorTransmission
 from models.differentialdrive import DifferentialDrive
 from utils import units
@@ -18,6 +20,7 @@ class Robot(magicbot.MagicRobot):
     chassis: Chassis
     autoselector: AutoSelector
     localization: Localization
+    trajectorytracker: TrajectoryTracker
 
     VELOCITY_KP: float = 0.0
     VELOCITY_KI: float = 0.0
@@ -32,6 +35,9 @@ class Robot(magicbot.MagicRobot):
     DRIVE_V_INTERCEPT: float = 1.055  # V
     DRIVE_KV: float = 0.135  # V / (m/s)
     DRIVE_KA: float = 0.012  # V / (m/s^2)
+
+    KBETA = 2.0
+    KZETA = 0.7
 
     def createObjects(self):
         """Create motors and stuff here"""
@@ -75,6 +81,8 @@ class Robot(magicbot.MagicRobot):
             self.transmission_l,
             self.transmission_r,
         )
+
+        self.ramsete = Ramsete(self.KBETA, self.KZETA)
 
     def teleopInit(self):
         """Called when teleop starts; optional"""

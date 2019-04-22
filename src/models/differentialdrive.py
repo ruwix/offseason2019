@@ -6,7 +6,7 @@ Team 254
 import numpy as np
 
 from models.dcmotortransmission import DCMotorTransmission
-from utils.mathextension import MinMax, EPSILON, epsilonEquals
+from utils.mathextension import EPSILON, MinMax, epsilonEquals
 from utils.physicalstates import ChassisState, DriveDynamics, WheelState
 
 
@@ -88,10 +88,10 @@ class DifferentialDrive:
     def getVoltagesFromkV(self, velocities: WheelState) -> WheelState:
         """Get the voltage simply from the Kv and the friction voltage of the transmissions."""
         return WheelState(
-            velocities.left / self.left_transmission.speedPerVolt
-            + self.left_transmission.frictionVoltage * np.sign(velocities.left),
-            velocities.right / self.right_transmission.speedPerVolt
-            + self.right_transmission.frictionVoltage * np.sign(velocities.right),
+            velocities.left / self.left_transmission.speed_per_volt
+            + self.left_transmission.friction_voltage * np.sign(velocities.left),
+            velocities.right / self.right_transmission.speed_per_volt
+            + self.right_transmission.friction_voltage * np.sign(velocities.right),
         )
 
     def solveForwardWheelDynamics(

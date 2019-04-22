@@ -6,6 +6,7 @@ from autonomous.paths import Path
 from components.autoselector import AutoMode, AutoSelector, AutoSide
 from components.chassis import Chassis
 from components.localization import Localization
+from components.trajectorytracker import TrajectoryTracker
 from controllers.ramsete import Ramsete
 from models.differentialdrive import DifferentialDrive
 from trajectory.constraints.angularaccelerationconstraint import (
@@ -32,9 +33,7 @@ class Autonomous(AutonomousStateMachine):
     autoselector: AutoSelector
     diff_drive: DifferentialDrive
     localization: Localization
-
-    KBETA = 2.0
-    KZETA = 0.7
+    trajectorytracker: TrajectoryTracker
 
     MAX_CENTRIPETAL_ACCELERATION: float = 2.4  # m/s^2
     MAX_ANGULAR_ACCELERATION: float = 6.0  # rad/s^2
@@ -49,10 +48,10 @@ class Autonomous(AutonomousStateMachine):
         self.timer = wpilib.Timer()
         self.trajectory = None
         self.tg = TrajectoryGenerator()
-        self.ramsete = Ramsete(self.KBETA, self.KZETA)
         self.heading = 0
 
-    def getTrajectory(self, poses, _reversed=False):
+    def setTrajectory(self, path, _reversed=False):
+        poses = path.getPoses(mirrored=self.mirrored)
         constraints = np.array(
             [
                 CentripetalAccelerationConstraint(self.MAX_CENTRIPETAL_ACCELERATION),
@@ -61,7 +60,7 @@ class Autonomous(AutonomousStateMachine):
             ],
             dtype=TimingConstraint,
         )
-        return self.tg.generateTrajectory(
+        trajectory = self.tg.generateTrajectory(
             spline_poses=poses,
             constraints=constraints,
             start_velocity=self.START_VELOCITY,
@@ -70,6 +69,8 @@ class Autonomous(AutonomousStateMachine):
             max_acceleration=self.MAX_ACCELERATION,
             _reversed=_reversed,
         )
+        self.trajectorytracker.reset(trajectory)
+        self.tg.drawSimulation(trajectory)
 
     @state(first=True)
     def initMode(self, initial_call):
@@ -77,7 +78,6 @@ class Autonomous(AutonomousStateMachine):
             AutoSide.LEFT,
             AutoMode.BACK_ROCKET,
         )  # self.autoselector.getSelection()
-
         if side == AutoSide.LEFT:
             self.mirrored = False
             self.localization.setState(1.70, 1.09, 0)
@@ -93,19 +93,6 @@ class Autonomous(AutonomousStateMachine):
         else:
             self.next_state("stop")
 
-    def followTrajectory(self):
-        if self.trajectory == None:
-            return False
-        if self.timer.get() < self.trajectory.length:
-            state = self.localization.state
-            state_d = self.trajectory.getState(self.timer.get())
-            velocity = self.ramsete.update(state, state_d)
-            print(round(self.ramsete.getError(),3))
-            self.chassis.setChassisState(velocity)
-            return True
-        else:
-            return False
-
     @timed_state(duration=2.0, next_state="stop")
     def crossLine(self, initial_call):
         self.chassis.setWheelOutput(0.4, 0.4)
@@ -113,14 +100,8 @@ class Autonomous(AutonomousStateMachine):
     @state
     def startToBackRocket(self, initial_call):
         if initial_call:
-            self.trajectory = self.getTrajectory(
-                Path.START_2_BACK_ROCKET.getPoses(mirrored=self.mirrored),
-                _reversed=False,
-            )
-            self.tg.drawSimulation(self.trajectory)
-            self.timer.reset()
-            self.timer.start()
-        if not self.followTrajectory():
+            self.setTrajectory(Path.START_2_BACK_ROCKET, _reversed=False)
+        if self.trajectorytracker.isFinished():
             self.setHeading(
                 240 * units.radians_per_degree, "backRocketToLoadingStation"
             )
@@ -128,40 +109,22 @@ class Autonomous(AutonomousStateMachine):
     @state
     def backRocketToLoadingStation(self, initial_call):
         if initial_call:
-            self.trajectory = self.getTrajectory(
-                Path.BACK_ROCKET_2_LOADING_STATION.getPoses(mirrored=self.mirrored),
-                _reversed=False,
-            )
-            self.tg.drawSimulation(self.trajectory)
-            self.timer.reset()
-            self.timer.start()
-        if not self.followTrajectory():
+            self.setTrajectory(Path.BACK_ROCKET_2_LOADING_STATION, _reversed=False)
+        if self.trajectorytracker.isFinished():
             self.setHeading(0, "loadingStationToBackRocket")
 
     @state
     def loadingStationToBackRocket(self, initial_call):
         if initial_call:
-            self.trajectory = self.getTrajectory(
-                Path.LOADING_STATION_2_BACK_ROCKET.getPoses(mirrored=self.mirrored),
-                _reversed=False,
-            )
-            self.tg.drawSimulation(self.trajectory)
-            self.timer.reset()
-            self.timer.start()
-        if not self.followTrajectory():
+            self.setTrajectory(Path.LOADING_STATION_2_BACK_ROCKET, _reversed=False)
+        if self.trajectorytracker.isFinished():
             self.next_state("stop")
 
     @state
     def startToFrontRocket(self, initial_call):
         if initial_call:
-            self.trajectory = self.getTrajectory(
-                Path.START_2_FRONT_ROCKET.getPoses(mirrored=self.mirrored),
-                _reversed=False,
-            )
-            self.tg.drawSimulation(self.trajectory)
-            self.timer.reset()
-            self.timer.start()
-        if not self.followTrajectory():
+            self.setTrajectory(Path.START_2_FRONT_ROCKET, _reversed=False)
+        if self.trajectorytracker.isFinished():
             self.setHeading(
                 180 * units.radians_per_degree, "frontRocketToLoadingStation"
             )
@@ -169,27 +132,16 @@ class Autonomous(AutonomousStateMachine):
     @state
     def frontRocketToLoadingStation(self, initial_call):
         if initial_call:
-            self.trajectory = self.getTrajectory(
-                Path.FRONT_ROCKET_2_LOADING_STATION.getPoses(mirrored=self.mirrored),
-                _reversed=False,
-            )
-            self.tg.drawSimulation(self.trajectory)
-            self.timer.reset()
-            self.timer.start()
-        if not self.followTrajectory():
+            self.getTrajectory(Path.FRONT_ROCKET_2_LOADING_STATION, _reversed=False)
+
+        if self.trajectorytracker.isFinished():
             self.setHeading(0 * units.radians_per_degree, "loadingStationToFrontRocket")
 
     @state
     def loadingStationToFrontRocket(self, initial_call):
         if initial_call:
-            self.trajectory = self.getTrajectory(
-                Path.LOADING_STATION_2_FRONT_ROCKET.getPoses(mirrored=self.mirrored),
-                _reversed=False,
-            )
-            self.tg.drawSimulation(self.trajectory)
-            self.timer.reset()
-            self.timer.start()
-        if not self.followTrajectory():
+            self.setTrajectory(Path.LOADING_STATION_2_FRONT_ROCKET, _reversed=False)
+        if self.trajectorytracker.isFinished():
             self.next_state("stop")
 
     def setHeading(self, heading, next_state):
