@@ -78,12 +78,12 @@ class Autonomous(AutonomousStateMachine):
             AutoSide.LEFT,
             AutoMode.BACK_ROCKET,
         )  # self.autoselector.getSelection()
+        self.localization.setState(1.70, 1.09, 0)
         if side == AutoSide.LEFT:
             self.mirrored = False
-            self.localization.setState(1.70, 1.09, 0)
         elif side == AutoSide.RIGHT:
             self.mirrored = True
-            self.localization.setState(1.70, -1.09, 0)
+            self.localization.state.y *= -1
         if mode == AutoMode.CROSS_LINE:
             self.next_state("crossLine")
         elif mode == AutoMode.BACK_ROCKET:
@@ -146,6 +146,8 @@ class Autonomous(AutonomousStateMachine):
 
     def setHeading(self, heading, next_state):
         self.heading = heading
+        if self.mirrored:
+            self.heading *= -1
         self._next_state = next_state
         self.next_state("turnToHeading")
 
@@ -159,3 +161,7 @@ class Autonomous(AutonomousStateMachine):
     @state
     def stop(self):
         self.chassis.setWheelOutput(0, 0)
+
+    def on_disable(self):
+        super().on_disable()
+        self.trajectorytracker.stop()

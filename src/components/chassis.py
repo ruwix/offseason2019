@@ -19,8 +19,8 @@ class Chassis:
     imu: ctre.PigeonIMU
     diff_drive: DifferentialDrive
 
-    WHEELBASE: float = 24 * units.meters_per_inch  # m
-    TRACK_WIDTH: float = 24 * units.meters_per_inch  # m
+    WHEELBASE: float = 30 * units.meters_per_inch  # m
+    TRACK_WIDTH: float = 30 * units.meters_per_inch  # m
     TRACK_RADIUS: float = TRACK_WIDTH / 2  # m
 
     ENCODER_CPR: int = 4096  # native units / revolution
@@ -51,19 +51,14 @@ class Chassis:
 
     def setWheelVelocity(self, velocity: WheelState, feedforward: WheelState) -> None:
         self.mode = self._Mode.Velocity
-        self.signal.left = (
-            int(velocity.left * self.ENCODER_TICKS_PER_METER)
-            / 10
-            * self.diff_drive.wheel_radius
-        )
-        self.signal.right = (
-            int(velocity.right * self.ENCODER_TICKS_PER_METER)
-            / 10
-            * self.diff_drive.wheel_radius
-        )
+        self.signal.left = velocity.left
+        self.signal.right = velocity.right
         self.ff = feedforward
         self.ff.left /= 12
         self.ff.right /= 12
+
+    def setVelocityFromCurvature(self, velocity: float, curvature: float) -> None:
+        self.setVelocityFromKinematics(ChassisState(velocity, velocity * curvature))
 
     def setVelocityFromKinematics(self, velocity: ChassisState) -> None:
         wheel_velocity = self.diff_drive.solveInverseKinematics(velocity)
@@ -83,14 +78,18 @@ class Chassis:
 
     def setWheelPosition(self, sl: float, sr: float):
         self.mode = self._Mode.Position
-        self.signal.left = sl * self.ENCODER_TICKS_PER_METER
-        self.signal.right = sr * self.ENCODER_TICKS_PER_METER
+        self.signal.left = sl
+        self.signal.right = sr
 
     def setHeading(self, heading: float):
         self.heading = heading
-        error = self.TRACK_RADIUS * (getAngleDiff(self.imu.getYaw(), heading))
-        sl = self.dm_l.getPosition() / self.ENCODER_TICKS_PER_METER + error
-        sr = self.dm_r.getPosition() / self.ENCODER_TICKS_PER_METER - error
+        error = (
+            self.diff_drive.track_radius
+            * (getAngleDiff(self.imu.getYaw(), heading))
+            / self.diff_drive.wheel_radius
+        )
+        sl = self.dm_l.getPosition() + error
+        sr = self.dm_r.getPosition() - error
         self.setWheelPosition(sl, sr)
 
     def isAtHeading(self):
@@ -108,6 +107,7 @@ class Chassis:
 
     def on_enable(self):
         """Called when the robot enters teleop or autonomous mode"""
+        self.reset()
 
     def execute(self):
         """Called periodically"""
@@ -115,7 +115,6 @@ class Chassis:
             self.dm_l.setOutput(self.signal.left)
             self.dm_r.setOutput(self.signal.right)
         elif self.mode == self._Mode.Velocity:
-            print(self.ff.left)
             self.dm_l.setVelocity(self.signal.left, self.ff.left)
             self.dm_r.setVelocity(self.signal.right, self.ff.right)
         elif self.mode == self._Mode.Position:

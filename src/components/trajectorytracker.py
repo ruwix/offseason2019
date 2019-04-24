@@ -47,7 +47,6 @@ class TrajectoryTracker:
 
         state = self.localization.state
         state_d = self.trajectory.getState(new_t)
-
         velocity = self.ramsete.update(state, state_d)
         if self.previous_velocity == None:
             acceleration = ChassisState(0, 0)

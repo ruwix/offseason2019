@@ -13,7 +13,8 @@ from models.dcmotortransmission import DCMotorTransmission
 from models.differentialdrive import DifferentialDrive
 from utils import units
 from utils.lazypigeonimu import LazyPigeonIMU
-from utils.lazytalonsrx import LazyTalonSRX
+from utils.lazytalonsrx import LazyTalonSRX, CTREMag
+from utils.physicalstates import ChassisState
 
 
 class Robot(magicbot.MagicRobot):
@@ -29,12 +30,12 @@ class Robot(magicbot.MagicRobot):
     MM_VEL = 2.0  # m/s
     MM_ACCEL = 1.0  # m/s^2
 
-    ROBOT_LINEAR_INERTIA: float = 60  # kg
-    ROBOT_ANGULAR_INERTIA: float = 80  # kg * m^2
-    ROBOT_ANGUALR_DRAG: float = 12
+    ROBOT_MASS: float = 60  # kg
+    ROBOT_MOI: float = 10  # kg * m^2
+    ROBOT_ANGUALR_DRAG: float = 12  # N*m / (rad/s)
     DRIVE_V_INTERCEPT: float = 1.055  # V
-    DRIVE_KV: float = 0.135  # V / (m/s)
-    DRIVE_KA: float = 0.012  # V / (m/s^2)
+    DRIVE_KV: float = 0.135  # V per rad/s
+    DRIVE_KA: float = 0.012  # V per rad/s^2
 
     KBETA = 2.0
     KZETA = 0.7
@@ -45,12 +46,10 @@ class Robot(magicbot.MagicRobot):
         self.dm_l = LazyTalonSRX(1)
         self.dm_r = LazyTalonSRX(2)
 
-        self.dm_l.initialize(
-            inverted=False, encoder=True, phase=False, name="Drive Motor Left"
-        )
-        self.dm_r.initialize(
-            inverted=False, encoder=True, phase=False, name="Drive Motor Right"
-        )
+        self.dm_l.initialize(name="Drive Motor Left")
+        self.dm_r.initialize(name="Drive Motor Right")
+        self.dm_l.setEncoderConfig(CTREMag, False)
+        self.dm_r.setEncoderConfig(CTREMag, False)
         self.dm_l.setPIDF(
             0, self.VELOCITY_KP, self.VELOCITY_KI, self.VELOCITY_KD, self.VELOCITY_KF
         )
@@ -68,18 +67,18 @@ class Robot(magicbot.MagicRobot):
 
         self.transmission_l = DCMotorTransmission(
             1 / self.DRIVE_KV,
-            Chassis.WHEEL_RADIUS ** 2 * self.ROBOT_LINEAR_INERTIA / (2 * self.DRIVE_KA),
+            Chassis.WHEEL_RADIUS ** 2 * self.ROBOT_MASS / (2 * self.DRIVE_KA),
             self.DRIVE_V_INTERCEPT,
         )
         self.transmission_r = self.transmission_l
         self.diff_drive = DifferentialDrive(
-            self.ROBOT_LINEAR_INERTIA,
-            self.ROBOT_ANGUALR_DRAG,
-            self.ROBOT_ANGUALR_DRAG,
-            Chassis.WHEEL_RADIUS,
-            Chassis.TRACK_RADIUS,
-            self.transmission_l,
-            self.transmission_r,
+            mass=self.ROBOT_MASS,
+            moi=self.ROBOT_MOI,
+            angular_drag=self.ROBOT_ANGUALR_DRAG,
+            wheel_radius=Chassis.WHEEL_RADIUS,
+            track_radius=Chassis.TRACK_RADIUS,
+            left_transmission=self.transmission_l,
+            right_transmission=self.transmission_r,
         )
 
         self.ramsete = Ramsete(self.KBETA, self.KZETA)
@@ -100,8 +99,8 @@ class Robot(magicbot.MagicRobot):
             if np.abs(right) < np.abs(left) and 1 < np.abs(left):
                 left /= np.abs(left)
                 right /= np.abs(left)
-            self.chassis.setWheelOutput(left, right)
-            print(round(self.localization.state, 3))
+            self.chassis.setVelocityFromCurvature(speed * 3, rotation * 3.14)
+            # print(round(self.localization.state, 3))
         except:
             self.onException()
 

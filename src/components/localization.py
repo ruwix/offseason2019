@@ -37,8 +37,7 @@ class Localization:
 
         delta_left = cur_left_encoder - self.last_left_encoder
         delta_right = cur_right_encoder - self.last_right_encoder
-
-        dx = (delta_left + delta_right) / 2 / Chassis.ENCODER_TICKS_PER_METER
+        dx = (delta_left + delta_right) / 2 * self.diff_drive.wheel_radius
         dheading = cur_heading - self.last_heading
 
         self.state += Twist(dx, 0, dheading).asPose()
@@ -49,8 +48,10 @@ class Localization:
 
     def reset(self) -> None:
         self.state = Pose()
-        self.current_encoder_pos = 0
-        self.last_encoder_pos = 0
+        self.last_left_encoder = 0
+        self.last_right_encoder = 0
+        self.last_heading = 0
+
 
     def on_enable(self):
         pass
